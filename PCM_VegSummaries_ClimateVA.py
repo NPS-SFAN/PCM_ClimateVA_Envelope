@@ -29,19 +29,23 @@ logFileName = f'{workspace}\\{outNameLog}_{dateNow}.LogFile.txt'  #Name of the .
 
 def main():
     try:
-        print(f'Successfully finished processing - {park}')
+        session_info.show()
 
         inQuery = "Select * FROM tblNAWMADataset"
-        outFun = connect_to_AcessDB(inQuery, ISEDDB)
+        outFun = connect_to_AcessDB(inQuery, inDB)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function connect_to_AcessDB - NAWMADataset" + messageTime + " - Failed - Exiting Script")
             exit()
-        else:
 
-            outDfSpecies = outFun[1]
-            messageTime = timeFun()
-            print(f'Success: connect_to_AcessDB - tranformPINN {messageTime}')
+        messageTime = timeFun()
+        print(f'Success: connect_to_AcessDB - tranformPINN {messageTime}')
+        outDfNAWMA = outFun[1]
+
+        #####
+        #Calculate Percentage Cover By Event Plot
+        #
+
 
 
 
@@ -54,6 +58,8 @@ def main():
 
         traceback.print_exc(file=sys.stdout)
         logFile.close()
+    finally:
+        exit()
 
 #Connect to Access DB and perform defined query - return query in a dataframe
 def connect_to_AcessDB(query, inDB):
@@ -65,9 +71,40 @@ def connect_to_AcessDB(query, inDB):
         cnxn.close()
 
         return "success function", queryDf
+    except:
+        print(f'Failed - connect_to_AccessDB')
+        exit()
 
 def timeFun():
-    from datetime import datetime
-    b = datetime.now()
-    messageTime = b.isoformat()
-    return messageTime
+    try:
+        b = datetime.now()
+        messageTime = b.isoformat()
+        return messageTime
+    except:
+        print(f'Failed - timeFun')
+        exit()
+
+if __name__ == '__main__':
+
+    #################################
+    # Checking for Out Directories and Log File
+    ##################################
+    if os.path.exists(outDir):
+        pass
+    else:
+        os.makedirs(outDir)
+
+    if os.path.exists(workspace):
+        pass
+    else:
+        os.makedirs(workspace)
+
+    # Check if logFile exists
+    if os.path.exists(logFileName):
+        pass
+    else:
+        logFile = open(logFileName, "w")  # Creating index file if it doesn't exist
+        logFile.close()
+
+    #Run Main Code Bloc
+    main()
