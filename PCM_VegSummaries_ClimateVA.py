@@ -43,9 +43,13 @@ def main():
         outDfNAWMA = outFun[1]
 
         #####
-        #Calculate Percentage Cover By Event Plot
-        #
-
+        #Calculate NAWMA Site Percentage Cover By Species By Location Event - Pulling from tblNAWMADataset
+        #####
+        outFun = NAWMA_CoverByEvent(outDfNAWMA)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function connect_to_AcessDB - nawma_CoverByEvent" + messageTime + " - Failed - Exiting Script")
+            exit()
 
 
 
@@ -60,6 +64,34 @@ def main():
         logFile.close()
     finally:
         exit()
+
+def NAWMA_CoverByEvent(inDF):
+    """
+    Create the NAWMA Site Percentage Cover By Species By Location Event Summary - Pulling from tblNAWMADataset.
+    Recreating the qrpt_NAWMA_SpeciesPercentCover summary in the PCM Front End but summarzing at the Event rather then
+    plot scale.
+
+    Suggested items to define for this class below:
+
+    :param inDF: dataframe with the tblNAWMADataset dataset files
+
+    :return: outSummaryDF: Data Frame with the Summary output
+    """
+    try:
+        #Remove NAWMA Plots - only retaining A, B, C subplots which have 50 hits per
+        nawmaDFSet =
+
+        result = inDF.groupBy(['EventID',])
+
+
+        return outSummaryDF
+
+    except:
+        print(f'Failed - NAWMA_CoverByEvent')
+        exit()
+
+
+
 
 #Connect to Access DB and perform defined query - return query in a dataframe
 def connect_to_AcessDB(query, inDB):
