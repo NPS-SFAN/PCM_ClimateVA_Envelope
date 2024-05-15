@@ -30,6 +30,8 @@ logFileName = f'{workspace}\\{outNameLog}_{dateNow}.LogFile.txt'  #Name of the .
 def main():
     try:
         session_info.show()
+        #Set option in pandas to not allow chaining (views) of dataframes, instead force copy to be performed.
+        pd.options.mode.copy_on_write = True
 
         inQuery = "Select * FROM tblNAWMADataset"
         outFun = connect_to_AcessDB(inQuery, inDB)
@@ -39,7 +41,7 @@ def main():
             exit()
 
         messageTime = timeFun()
-        print(f'Success: connect_to_AcessDB - tranformPINN {messageTime}')
+        print(f'Success: connect_to_AcessDB - NAWMADataset {messageTime}')
         outDfNAWMA = outFun[1]
 
         #####
@@ -50,6 +52,41 @@ def main():
             messageTime = timeFun()
             print("WARNING - Function connect_to_AcessDB - nawma_CoverByEvent" + messageTime + " - Failed - Exiting Script")
             exit()
+        DFWithAverageCover = outFun[1]
+
+        #Import the Events Dataset
+        inQuery = "Select * FROM tblEventsDataset"
+        outFun = connect_to_AcessDB(inQuery, inDB)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function connect_to_AcessDB - EventsDataset" + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        print(f'Success: connect_to_AcessDB - EventDataset {messageTime}')
+        DfEvents = outFun[1]
+
+        #Join Event Dataset with AvergeCoverBy Event Dataset and Find Top Two Cover Taxon per plot type
+        DFCoverWEvents = pd.merge(DFWithAverageCover, DfEvents, on='EventID')
+
+        #Retain only the fields of interest
+        fieldsToRetain = ['']
+        DFCoverWEvents = DFCoverWEvents.loc[:, fieldsToRetain]
+
+        #Export the Event Species Scale Summary to .csv
+
+
+        #Get the Highest Cover Taxonomy By Event, Community Monitoring Cycle, and Community - export to a excel as
+        #three worksheets
+        outFun = NAWMA_HighestCoverByEventCommunity(DFCoverWEvents)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function connect_to_AcessDB - nawma_CoverByEvent" + messageTime + " - Failed - Exiting Script")
+            exit()
+        outDfWithAverageCover = outFun[1]
+
+        #Two outputs: 1) Event Species Scale Cover, 2) Community Scale
+
 
 
 
@@ -78,14 +115,30 @@ def NAWMA_CoverByEvent(inDF):
     :return: outSummaryDF: Data Frame with the Summary output
     """
     try:
-        ###STOPPED HERE 5/14/2024 KRS
+
         #Remove NAWMA Plots - only retaining A, B, C subplots which have 50 hits per
-        nawmaDFSet =
+        nawmaDFSetup = inDF[inDF['TransectID'] != 'NAWMA']
+        del inDF
 
-        result = inDF.groupBy(['EventID',])
+        #Calculate the Percent Cover as [HitsInQuadrant] * 2 (evidently 50 sample points in the NAWMA subplots.
+        nawmaDFSetup['PercentCover'] = nawmaDFSetup['HitsInQuadrat']*2
 
+        #Get Number of Plots (i.e. A, B, C) by event, the norm will be three
+        nawmaPlotsByEvent = nawmaDFSetup.groupby('EventID')['TransectID'].nunique().reset_index(name='PlotCount')
 
-        return outSummaryDF
+        #Sum the Total Cover by Event Species
+        nawmaDFEventSpeciesCover = nawmaDFSetup.groupby(['EventID', 'Species'])['PercentCover'].sum().reset_index(name='TotalCover')
+
+        #Join the PlotsByEvent and EventSpeciesCover Dataframes then Calculate the Species Event Percent Cover
+        nawmaDFEventSpeciesCoverPlotsByEvent = pd.merge(nawmaDFEventSpeciesCover, nawmaPlotsByEvent, on='EventID')
+
+        #Calculate the Nawma (Plots A, B, C) average cover by Event
+        nawmaDFEventSpeciesCoverPlotsByEvent['AverageCover'] = nawmaDFEventSpeciesCoverPlotsByEvent['TotalCover'] / nawmaDFEventSpeciesCoverPlotsByEvent['PlotCount']
+        del nawmaDFSetup
+        del nawmaDFEventSpeciesCover
+        del nawmaPlotsByEvent
+
+        return nawmaDFEventSpeciesCoverPlotsByEvent
 
     except:
         print(f'Failed - NAWMA_CoverByEvent')
