@@ -52,7 +52,7 @@ def main():
             messageTime = timeFun()
             print("WARNING - Function connect_to_AcessDB - nawma_CoverByEvent" + messageTime + " - Failed - Exiting Script")
             exit()
-        DFWithAverageCover = outFun[1]
+        DFWithAverageCoverByEvent = outFun[1]
 
         #Import the Events Dataset
         inQuery = "Select * FROM tblEventsDataset"
@@ -67,25 +67,51 @@ def main():
         DfEvents = outFun[1]
 
         #Join Event Dataset with AvergeCoverBy Event Dataset and Find Top Two Cover Taxon per plot type
-        DFCoverWEvents = pd.merge(DFWithAverageCover, DfEvents, on='EventID')
+        DFCoverWEvents = pd.merge(DFWithAverageCoverByEvent, DfEvents, on='EventID')
+        del DFWithAverageCoverByEvent
 
         #Retain only the fields of interest
-        fieldsToRetain = ['']
+        fieldsToRetain = ['UnitCode', 'EventID', 'StartDate', 'LocationID', 'LocName', 'Latitude', 'Longitude',
+                          'VegCode', 'VegDescription', 'Species', 'TotalCover', 'PlotCount', 'AverageCover', ]
+
         DFCoverWEvents = DFCoverWEvents.loc[:, fieldsToRetain]
 
-        #Export the Event Species Scale Summary to .csv
+        #Calculate a Year Field
+        DFCoverWEvents.insert(2,'Year', DFCoverWEvents['StartDate'].dt.year)
 
+        #############
+        # DFCoverWEvents will be exported as a worksheet in the script excel output
+        #########
 
-        #Get the Highest Cover Taxonomy By Event, Community Monitoring Cycle, and Community - export to a excel as
-        #three worksheets
-        outFun = NAWMA_HighestCoverByEventCommunity(DFCoverWEvents)
+        ########################################
+        # Derive the Top Cover Taxonomy By Event
+        ########################################
+
+        outFun = NAWMA_HighestCoverByEvent(DFCoverWEvents)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
-            print("WARNING - Function connect_to_AcessDB - nawma_CoverByEvent" + messageTime + " - Failed - Exiting Script")
+            print("WARNING - Function NAWMA_HighestCoverByEvent - " + messageTime + " - Failed - Exiting Script")
             exit()
-        outDfWithAverageCover = outFun[1]
 
-        #Two outputs: 1) Event Species Scale Cover, 2) Community Scale
+        outDfEventScale = outFun[1]  #Export to  excel
+
+        ##########################################################
+        # Derive the Top Cover Taxonomy Community Monitoring Cycle
+        ##########################################################
+
+        outFun = NAWMA_HighestCoverByMonCycle(DFCoverWEvents)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print(
+                "WARNING - Function NAWMA_HighestCoverByMonCycle - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        outDfMonCycle = outFun[1]  # Export to  excel
+
+
+
+
+
 
 
 
@@ -102,17 +128,112 @@ def main():
     finally:
         exit()
 
+def NAWMA_HighestCoverByEvent(inDF):
+    """
+    Extracts the Highest Cover Taxon by Event, Community Monitoring Cycle Year, and Community Across all years.
+
+    :param inDF: dataframe with the Event Scale Average Percent Cover and event metadata (e.g. Community type, etc.)
+
+    :return: outSummaryDF: Data Frame with the Summary output at the Event Scale
+    """
+
+    try:
+        ############################################
+        #Extract the Event Scale Top Two Highest Cover Taxon
+        ############################################
+        #Create copy of the dataframe to be used in the Function
+        inDF = inDF.copy()
+        #Define the Index Field in the 'inDF' to Composite 'EventID', 'Species'
+        inDF['CompositeKey'] = inDF['EventID'].astype(str) + inDF['Species']
+
+        #Set Index to the Composite Key Field
+        inDF.set_index('CompositeKey', inplace=True)
+
+        #List of Fields to Use in the Group By
+        groupList = ['EventID']
+        #Get the Top Two Cover Records By Event, retaining the index value
+        eventTopTwoGBDF= inDF.groupby(groupList,  group_keys=False).apply(lambda x: x.nlargest(2, 'AverageCover'))
+
+        #Push the Index Values Back to fields
+        eventTopTwoGBDF.reset_index(inplace=True)
+        inDF.reset_index(inplace=True)
+
+        #Join on the 'CompositeKeyEventsSpecies' field
+        outSummaryDF = pd.merge(inDF, eventTopTwoGBDF[['CompositeKey']],
+                             on='CompositeKey', how='inner')
+
+        #Drop the Composite Key Field
+        outSummaryDF.drop(columns=['CompositeKey'], inplace=True)
+
+        del eventTopTwoGBDF
+        del inDF
+
+        print(f'Successfully Processed - NAWMA_HighestCoverByEvent')
+        return 'success function', outSummaryDF
+
+
+    except:
+        print(f'Failed - NAWMA_HighestCoverByEvent')
+        exit()
+
+
+def NAWMA_HighestCoverByMonCycle(inDF):
+    """
+    Extracts the Highest Cover Taxon by Community Monitoring Cycle Year.
+
+    :param inDF: dataframe with the Event Scale Average Percent Cover and event metadata (e.g. Community type, etc.)
+
+    :return: outSummaryDF: Data Frame with the Summary output By Community Monitoring Cycle
+    """
+
+    try:
+        ############################################
+        #Extract the Event Scale Top Two Highest Cover Taxon
+        ############################################
+        # Create copy of the dataframe to be used in the Function
+        inDF = inDF.copy()
+
+        #Define the Index Field in the 'inDF' to Composite 'EventID', 'Species'
+        inDF['CompositeKey'] = inDF['VegCode'] + inDF['Year'].astype(str)
+
+        #Set Index to the Composite Key Field
+        inDF.set_index('CompositeKey', inplace=True)
+
+        #List of Fields to Use in the Group By
+        groupList = ['VegCode', 'Year']
+        #Get the Top Two Cover Records By Event, retaining the index value
+        outSummaryDF = inDF.groupby(groupList,  group_keys=False).apply(lambda x: x.nlargest(2, 'AverageCover'))
+
+        #Push the Index Values Back to fields
+        outSummaryDF.reset_index(inplace=True)
+
+        # Drop the Composite Key Field
+        outSummaryDF.drop(columns=['CompositeKey'], inplace=True)
+
+        del inDF
+
+        print(f'Successfully Processed - NAWMA_HighestCoverByMonCycle')
+
+        return 'success function', outSummaryDF
+
+    except:
+        print(f'Failed - NAWMA_HighestCoverByMonCycle')
+        exit()
+
+
+
+
+
 def NAWMA_CoverByEvent(inDF):
     """
-    Create the NAWMA Site Percentage Cover By Species By Location Event Summary - Pulling from tblNAWMADataset.
-    Recreating the qrpt_NAWMA_SpeciesPercentCover summary in the PCM Front End but summarzing at the Event rather then
-    plot scale.
-
-    Suggested items to define for this class below:
+    Create the NAWMA Site Percentage Cover By Species By Location/Event Summary - Pulling from tblNAWMADataset.
+    Recreating the qrpt_NAWMA_SpeciesPercentCover summary in the PCM Front End but summary at the Event Scale rather
+    then plot scale.
 
     :param inDF: dataframe with the tblNAWMADataset dataset files
 
-    :return: outSummaryDF: Data Frame with the Summary output
+    :return: nawmaDFEventSpeciesCoverPlotsByEvent: Dataframe with the Event Scale Total Cover, Plot Count and
+    Average Cover fields output
     """
     try:
 
@@ -138,7 +259,7 @@ def NAWMA_CoverByEvent(inDF):
         del nawmaDFEventSpeciesCover
         del nawmaPlotsByEvent
 
-        return nawmaDFEventSpeciesCoverPlotsByEvent
+        return 'success function', nawmaDFEventSpeciesCoverPlotsByEvent
 
     except:
         print(f'Failed - NAWMA_CoverByEvent')
@@ -160,6 +281,7 @@ def connect_to_AcessDB(query, inDB):
     except:
         print(f'Failed - connect_to_AccessDB')
         exit()
+
 
 def timeFun():
     try:
