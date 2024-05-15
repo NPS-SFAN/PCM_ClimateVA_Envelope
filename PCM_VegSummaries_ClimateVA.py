@@ -78,6 +78,7 @@ def NAWMA_CoverByEvent(inDF):
     :return: outSummaryDF: Data Frame with the Summary output
     """
     try:
+        ###STOPPED HERE 5/14/2024 KRS
         #Remove NAWMA Plots - only retaining A, B, C subplots which have 50 hits per
         nawmaDFSet =
 
