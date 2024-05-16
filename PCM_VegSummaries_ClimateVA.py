@@ -1,14 +1,16 @@
 """
 PCM_VegSummaries_ClimateVA.py
-Script performs summary of the PCM dataset files as partof the SFAN PCM Climate Change Vulnerability Assessment.
+Script performs summary of the NAWMA Vegeetation Plot of the Plant Communities Monitoring Protocol.
+Summary is to be used for identifying highest cover taxon by PCM Community Type to be used in as
+part of the SFAN PCM Climate Change Vulnerability Assessment.
 
 Output tables:
-DFCoverEvent- All Taxon Average Cover By Event/Plot Scale
-DFCoverEventTopTwo- Top Two Taxon Highest Average Cover By Event/Plot Scale
-DFCoverMonCycle - All Taxon Average Cover By Community Monitoring Cycle Scale
-DFCoverMonCycleTopTwo  - Top Two Taxon Highest Average Cover By Community Monitoring Cycle Scale
-DFCoverCommunity - All Taxon Average Cover By Community across all monitoring cycles
-DFCoverCommunityTopTwo  - Top Two Taxon Highest Average Cover By Community across all monitoring cycles
+NAWMACoverEventALL - All Taxon Average Cover By Event/Plot Scale
+NAWMACoverEventTopTwoTop - Two Taxon Highest Average Cover By Event/Plot Scale
+NAWMACoverMonCycleAll - All Taxon Average Cover By Community Monitoring Cycle Scale
+NAWMACoverMonCycleTopTwo - Top Two Taxon Highest Average Cover By Community Monitoring Cycle Scale
+NAWMACoverCommunity - All Taxon Average Cover By Community across all monitoring cycles
+NAWMACoverCommunityTopTwo - Top Two Taxon Highest Average Cover By Community across all monitoring cycles
 
 Python Environment: PCM_VegClimateVA - Python 3.11
 
@@ -24,6 +26,7 @@ import os
 import session_info
 import traceback
 from datetime import datetime
+import xlsxwriter
 
 # PCM Database
 inDB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\VitalSigns\PlantCommunities\Data\Database\SFAN_PlantCommunities_BE_20240306.accdb'
@@ -32,12 +35,11 @@ inDB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\VitalSigns\PlantCommunities\Data
 taxonRemoveList = ['Litter', 'Bare Ground', 'Lichen']
 
 # Output Name, OutDir, and Workspace
-outNameLog = 'PCM_Vegetation_ClimateVA'  # Output name for logfile
-outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM'  # Directory Output Location
+outName = 'PCM_NAWMA_Vegetation_ClimateVA'  # Output name for excel file and logile
+outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
-logFileName = f'{workspace}\\{outNameLog}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
-
+logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
 
 def main():
     try:
@@ -100,6 +102,13 @@ def main():
         DFCoverEvent = outFun[1]
         outDFList = []
         outDFList.append(DFCoverEvent)
+        outDFListName = []
+        outDFListName.append('NAWMACoverEventALL')
+
+        scriptMsg = 'Successfully Completed Event Scale NAWMA Cover Summaries ' + messageTime
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
 
         ########################################
         # NAWMA_CoverByMonCycle
@@ -113,10 +122,9 @@ def main():
         DFCoverEventTopTwo = outFun[1]  # Export to  excel
 
         outDFList.append(DFCoverEventTopTwo)
+        outDFListName.append('NAWMACoverEventTopTwo')
 
-        ##########################################################
         # Derive the Top Highest Cover Taxonomy By Community Monitoring Cycle
-        ##########################################################
 
         # Calculate NAWMA Community Monitoring Cycle Average Percent Cover (i.e. Sum of All Taxon Percent Cover divided
         # by the number of plots in the monitoring cycle).
@@ -129,6 +137,7 @@ def main():
         DFCoverMonCycle = outFun[1]
         # Export all Cover by Monitoring Cycle
         outDFList.append(DFCoverMonCycle)
+        outDFListName.append('NAWMACoverMonCycleAll')
 
         # Derive the Top Two Cover by Monitoring Cycle
         outFun = NAWMA_HighestCoverByMonCycle(DFCoverMonCycle)
@@ -140,6 +149,12 @@ def main():
         # Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
         DFCoverMonCycleTopTwo = outFun[1]  # Export to  excel
         outDFList.append(DFCoverMonCycleTopTwo)
+        outDFListName.append('NAWMACoverMonCycleTopTwo')
+
+        scriptMsg = 'Successfully Completed Monitoring Cycle NAWMA Cover Summaries ' + messageTime
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
 
         ##########################################################
         # Derive the Top Two Highest Average Cover Taxonomy By Community across all Monitoring Cycles
@@ -156,21 +171,52 @@ def main():
         DFCoverCommunity = outFun[1]
         # Export all Cover by Monitoring Cycle
         outDFList.append(DFCoverCommunity)
+        outDFListName.append('NAWMACoverCommunity')
 
         # Derive the Top Two Cover by Monitoring Cycle
         outFun = NAWMA_HighestCoverByCommunity(DFCoverCommunity)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
-            print(
-                "WARNING - Function NAWMA_HighestCoverByCommunity - " + messageTime + " - Failed - Exiting Script")
+            print("WARNING - Function NAWMA_HighestCoverByCommunity - " + messageTime + " - Failed - Exiting Script")
             exit()
-        # Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
+
+        # Out Top Two Average Taxonomy Cover By Community
         DFCoverCommunityTopTwo = outFun[1]  # Export to  excel
         outDFList.append(DFCoverCommunityTopTwo)
+        outDFListName.append('NAWMACoverCommunityTopTwo')
+
+        scriptMsg = 'Successfully Completed Community NAWMA Cover Summaries ' + messageTime
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
 
 
+        ##############################
+        #Export the output Dataframes
+        #############################
+        #Define Path to Output Summary Table
+        outExcel = f'{outDir}\\{outName}_{dateNow}.xlsx'
 
+        if os.path.exists(outExcel):
+            os.remove(outExcel)
 
+        #Open the Pandas excel writer
+        excel_writer = pd.ExcelWriter(outExcel, engine='xlsxwriter')
+
+        # Write each DataFrame to a separate worksheet
+        for i, df in enumerate(outDFList):
+            sheetName = outDFListName[i]
+            df.to_excel(excel_writer, sheet_name=sheetName, index=False)
+
+        # Save the Excel file
+        excel_writer.close()
+
+        scriptMsg = 'Successfully Completed Community Scale NAWMA Cover Summaries - see output: ' + outExcel + ' - '+ messageTime
+
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
 
 
     except:
@@ -179,12 +225,12 @@ def main():
         print(scriptMsg)
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
-
-        traceback.print_exc(file=sys.stdout)
         logFile.close()
+        traceback.print_exc(file=sys.stdout)
+
+
     finally:
         exit()
-
 
 def NAWMA_HighestCoverByEvent(inDF):
     """
