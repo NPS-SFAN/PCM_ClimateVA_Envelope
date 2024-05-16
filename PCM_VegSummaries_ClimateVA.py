@@ -14,7 +14,7 @@ NAWMACoverCommunityTopTwo - Top Two Taxon Highest Average Cover By Community acr
 
 Python Environment: PCM_VegClimateVA - Python 3.11
 
-Date Developed - March 2024
+Date Developed - May 2024
 Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Network Inventory and Monitoring
 """
 
