@@ -2,6 +2,14 @@
 PCM_VegSummaries_ClimateVA.py
 Script performs summary of the PCM dataset files as partof the SFAN PCM Climate Change Vulnerability Assessment.
 
+Output tables:
+DFCoverEvent- All Taxon Average Cover By Event/Plot Scale
+DFCoverEventTopTwo- Top Two Taxon Highest Average Cover By Event/Plot Scale
+DFCoverMonCycle - All Taxon Average Cover By Community Monitoring Cycle Scale
+DFCoverMonCycleTopTwo  - Top Two Taxon Highest Average Cover By Community Monitoring Cycle Scale
+DFCoverCommunity - All Taxon Average Cover By Community across all monitoring cycles
+DFCoverCommunityTopTwo  - Top Two Taxon Highest Average Cover By Community across all monitoring cycles
+
 Python Environment: PCM_VegClimateVA - Python 3.11
 
 Date Developed - March 2024
@@ -20,7 +28,7 @@ from datetime import datetime
 # PCM Database
 inDB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\VitalSigns\PlantCommunities\Data\Database\SFAN_PlantCommunities_BE_20240306.accdb'
 
-#List of Taxon/Species to be removed from analysis
+# List of Taxon/Species to be removed from analysis
 taxonRemoveList = ['Litter', 'Bare Ground', 'Lichen']
 
 # Output Name, OutDir, and Workspace
@@ -37,7 +45,7 @@ def main():
         # Set option in pandas to not allow chaining (views) of dataframes, instead force copy to be performed.
         pd.options.mode.copy_on_write = True
         ################
-        #IMPORT Datasets
+        # IMPORT Datasets
         ################
 
         inQuery = "Select * FROM tblNAWMADataset"
@@ -61,7 +69,7 @@ def main():
 
         messageTime = timeFun()
         print(f'Success: connect_to_AcessDB - EventDataset {messageTime}')
-        #Events dataset dataframe
+        # Events dataset dataframe
         DfEvents = outFun[1]
 
         ####################
@@ -119,7 +127,7 @@ def main():
                 "WARNING -  - NAWMA_CoverByMonCycle" + messageTime + " - Failed - Exiting Script")
             exit()
         DFCoverMonCycle = outFun[1]
-        #Export all Cover by Monitoring Cycle
+        # Export all Cover by Monitoring Cycle
         outDFList.append(DFCoverMonCycle)
 
         # Derive the Top Two Cover by Monitoring Cycle
@@ -129,13 +137,26 @@ def main():
             print(
                 "WARNING - Function NAWMA_HighestCoverByMonCycle - " + messageTime + " - Failed - Exiting Script")
             exit()
-        #Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
+        # Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
         DFCoverMonCycleTopTwo = outFun[1]  # Export to  excel
         outDFList.append(DFCoverMonCycleTopTwo)
 
         ##########################################################
         # Derive the Top Two Highest Average Cover Taxonomy By Community across all Monitoring Cycles
         ##########################################################
+
+        # Calculate NAWMA Community Average Percent Cover (i.e. Sum of All Taxon Percent Cover divided
+        # by the number of plots across all monitoring cycles).
+        outFun = NAWMA_CoverByCommunity(outDfNAWMA, taxonRemoveList, DfEvents)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print(
+                "WARNING -  - NAWMA_CoverByMonCycle" + messageTime + " - Failed - Exiting Script")
+            exit()
+        DFCoverCommunity = outFun[1]
+        # Export all Cover by Monitoring Cycle
+        outDFList.append(DFCoverCommunity)
+
 
 
 
@@ -231,7 +252,8 @@ def NAWMA_HighestCoverByMonCycle(inDF):
         # List of Fields to Use in the Group By
         groupList = ['VegCode', 'Year']
         # Get the Top Two Cover Records By Event, retaining the index value
-        outSummaryDF = inDF.groupby(groupList, group_keys=False).apply(lambda x: x.nlargest(2, 'MonitoringCycleAverageCover'))
+        outSummaryDF = inDF.groupby(groupList, group_keys=False).apply(
+            lambda x: x.nlargest(2, 'MonitoringCycleAverageCover'))
 
         # Push the Index Values Back to fields
         outSummaryDF.reset_index(inplace=True)
@@ -297,10 +319,10 @@ def NAWMA_CoverByEvent(inDF, taxonRemoveList):
         # Remove NAWMA Plots - only retaining A, B, C subplots which have 50 hits per
         nawmaDFSetup = inDF[inDF['TransectID'] != 'NAWMA']
 
-        #Removed Non-Herbaceous Taxon
+        # Removed Non-Herbaceous Taxon
         mask = nawmaDFSetup['Species'].isin(taxonRemoveList)
 
-        #apply the Mask, removing the Non-Herbaceous records
+        # apply the Mask, removing the Non-Herbaceous records
         nawmaDFSetup = nawmaDFSetup[~mask]
 
         # Calculate the Percent Cover as [HitsInQuadrant] * 2 (50 sample points in the NAWMA subplots.
@@ -338,7 +360,7 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
     :param taxonRemoveList: List with the taxon in field 'Species' to be removed from analysis
     :param DfEvents: Events Dataframe will be used to join event metadata to outputs
 
-    :return: nawma: Dataframe with the Event Scale Total Cover, Plot Count and
+    :return: nawmaMonCycleTCwPC: Dataframe with the Community Monitoring Cycle Total Cover, Number of Plots and
     Average Cover fields output
     """
     try:
@@ -354,15 +376,16 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
         # Calculate the Percent Cover as [HitsInQuadrant] * 2 (50 sample points in the NAWMA subplots.
         nawmaDFSetup['PercentCover'] = nawmaDFSetup['HitsInQuadrat'] * 2
 
-        #Join to Event Dataset to get Year and Community
+        # Join to Event Dataset to get Year and Community
         # Define Field(s) to do join on
         joinFields = ['EventID']
         # Retain only the fields of interest
         fieldsToRetain = ['UnitCode', 'EventID', 'StartDate', 'LocationID', 'LocName', 'Latitude', 'Longitude',
                           'TransectID', 'VegCode', 'VegDescription', 'Species', 'HitsInQuadrat', 'PercentCover']
 
-        #Perform the Merge of nawma
-        DFNAWMAwPCwEvent = pd.merge(nawmaDFSetup, DfEvents[['EventID', 'StartDate', 'VegCode', 'VegDescription']], on= joinFields)
+        # Perform the Merge of nawma
+        DFNAWMAwPCwEvent = pd.merge(nawmaDFSetup, DfEvents[['EventID', 'StartDate', 'VegCode', 'VegDescription']],
+                                    on=joinFields)
 
         # Subset to the desired fields
         DFNAWMAwPCwEvent = DFNAWMAwPCwEvent.loc[:, fieldsToRetain]
@@ -370,31 +393,98 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
         # Calculate a Year Field
         DFNAWMAwPCwEvent.insert(2, 'Year', DFNAWMAwPCwEvent['StartDate'].dt.year)
 
-
         # Get Number of Plots By Event  (i.e. A, B, C) by event, the norm will be three
-        nawmaPlotCountByEvent = DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode', 'Year'])['TransectID'].nunique().reset_index(name='EventPlotCount')
+        nawmaPlotCountByEvent = DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode', 'Year'])[
+            'TransectID'].nunique().reset_index(name='EventPlotCount')
 
         # Get Number of Plot by Community Monitoring Cycle
         nawmaPlotCountComMonCycle = nawmaPlotCountByEvent.groupby(['VegCode', 'Year'])[
             'EventPlotCount'].sum().reset_index(name='MonitoringCyclePlotCount')
 
-
-        #Sum the Total Cover By Species By Community Monitoring Cycle
-        nawmaMonCycleTotalCover = DFNAWMAwPCwEvent.groupby(['VegCode', 'Year', 'Species'])['PercentCover'].sum().reset_index(
+        # Sum the Total Cover By Species By Community Monitoring Cycle
+        nawmaMonCycleTotalCover = DFNAWMAwPCwEvent.groupby(['VegCode', 'Year', 'Species'])[
+            'PercentCover'].sum().reset_index(
             name='MonitoringCycleTotalCover')
 
         # Join the Total Cover and Plot Count By Monitoring Cycle Dataframes
         nawmaMonCycleTCwPC = pd.merge(nawmaMonCycleTotalCover, nawmaPlotCountComMonCycle[['VegCode', 'Year',
-                                'MonitoringCyclePlotCount']], on=['VegCode', 'Year'])
+                                                                                          'MonitoringCyclePlotCount']],
+                                      on=['VegCode', 'Year'])
 
         # Calculate the Community Monitoring Cycle Average Species Cover
         nawmaMonCycleTCwPC['MonitoringCycleAverageCover'] = nawmaMonCycleTCwPC['MonitoringCycleTotalCover'] / \
-                                                               nawmaMonCycleTCwPC['MonitoringCyclePlotCount']
+                                                            nawmaMonCycleTCwPC['MonitoringCyclePlotCount']
 
         return 'success function', nawmaMonCycleTCwPC
 
     except:
         print(f'Failed - NAWMA_CoverByEvent')
+        exit()
+
+
+def NAWMA_CoverByCommunity(inDF, taxonRemoveList, DfEvents):
+    """
+    Create the NAWMA Average Cover by Community - Pulling from tblNAWMADataset.
+
+    :param inDF: dataframe with the tblNAWMADataset dataset file
+    :param taxonRemoveList: List with the taxon in field 'Species' to be removed from analysis
+    :param DfEvents: Events Dataframe will be used to join event metadata to outputs
+
+    :return: nawmaMonCycleTCwPC: Dataframe with the Community Monitoring Cycle Total Cover, Number of Plots and
+    Average Cover fields output
+    """
+    try:
+        # Remove NAWMA Plots - only retaining A, B, C subplots which have 50 hits per
+        nawmaDFSetup = inDF[inDF['TransectID'] != 'NAWMA']
+
+        # Removed Non-Herbaceous Taxon
+        mask = nawmaDFSetup['Species'].isin(taxonRemoveList)
+
+        # apply the Mask, removing the Non-Herbaceous records
+        nawmaDFSetup = nawmaDFSetup[~mask]
+
+        # Calculate the Percent Cover as [HitsInQuadrant] * 2 (50 sample points in the NAWMA subplots.
+        nawmaDFSetup['PercentCover'] = nawmaDFSetup['HitsInQuadrat'] * 2
+
+        # Join to Event Dataset to get Community
+        # Define Field(s) to do join on
+        joinFields = ['EventID']
+
+        # Retain only the fields of interest
+        fieldsToRetain = ['UnitCode', 'EventID', 'VegCode', 'VegDescription', 'Species', 'TransectID',
+                          'HitsInQuadrat', 'PercentCover']
+
+        # Perform the Merge of nawma
+        DFNAWMAwPCwEvent = pd.merge(nawmaDFSetup, DfEvents[['EventID', 'StartDate', 'VegCode', 'VegDescription']],
+                                    on=joinFields)
+
+        # Subset to the desired fields
+        DFNAWMAwPCwEvent = DFNAWMAwPCwEvent.loc[:, fieldsToRetain]
+
+        # Get Number of Plots By Event  (i.e. A, B, C) by event, the norm will be three
+        nawmaPlotCountByEvent = (DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode', 'Year'])['TransectID'].nunique().
+                                 reset_index(name='EventPlotCount'))
+
+        # Get Number of Plot by Community
+        nawmaPlotCountCommunity = nawmaPlotCountByEvent.groupby(['VegCode'])[
+            'EventPlotCount'].sum().reset_index(name='CommunityPlotCount')
+
+        # Sum the Total Cover By Species By Community Monitoring Cycle
+        nawmaCommunityTotalCover = DFNAWMAwPCwEvent.groupby(['VegCode', 'Species'])['PercentCover'].sum().reset_index(
+            name='CommunityTotalCover')
+
+        # Join the Total Cover and Plot Count By Monitoring Cycle Dataframes
+        nawmaCommunityTCwPC = pd.merge(nawmaCommunityTotalCover, nawmaPlotCountCommunity[['VegCode',
+                                        'CommunityPlotCount']], on=['VegCode'])
+
+        # Calculate the Community Average Species Cover
+        nawmaCommunityTCwPC['MonitoringCycleAverageCover'] = nawmaMonCycleTCwPC['CommunityTotalCover'] / \
+                                                             nawmaMonCycleTCwPC['CommunityPlotCount']
+
+        return 'success function', nawmaCommunityTCwPC
+
+    except:
+        print(f'Failed - NAWMA_CoverByCommunity')
         exit()
 
 
