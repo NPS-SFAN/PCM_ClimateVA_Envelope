@@ -109,16 +109,17 @@ def main():
         # Derive the Top Cover Taxonomy Community Monitoring Cycle
         ##########################################################
 
-        # Calculate NAWMA AVerage Percent Cover across by Community Monitoring Cycle
+        # Calculate NAWMA Community Monitoring Cycle Average Percent Cover (i.e. Sum of All Taxon Percent Cover divided
+        # by the number of plots in the monitoring cycle).
         outFun = NAWMA_CoverByMonCycle(outDfNAWMA, taxonRemoveList, DfEvents)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print(
                 "WARNING -  - NAWMA_CoverByMonCycle" + messageTime + " - Failed - Exiting Script")
             exit()
-        DFWithAverageCoverByEvent = outFun[1]
+        DFCoverMonCycle = outFun[1]
 
-        outFun = NAWMA_HighestCoverByMonCycle(DFCoverWEvents)
+        outFun = NAWMA_HighestCoverByMonCycle(DFCoverMonCycle)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print(
@@ -351,10 +352,10 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
         joinFields = ['EventID']
         # Retain only the fields of interest
         fieldsToRetain = ['UnitCode', 'EventID', 'StartDate', 'LocationID', 'LocName', 'Latitude', 'Longitude',
-                          'VegCode', 'VegDescription', 'Species', 'HitsInQuadrat', 'PercentCover']
+                          'TransectID', 'VegCode', 'VegDescription', 'Species', 'HitsInQuadrat', 'PercentCover']
 
-        ####STOPPED HERE 5/15/2024
-        DFNAWMAwPCwEvent = pd.merge(nawmaDFSetup, DfEvents[['VegCode', 'StartDate']], on=joinFields)
+        #Perform the Merge of nawma
+        DFNAWMAwPCwEvent = pd.merge(nawmaDFSetup, DfEvents[['EventID', 'StartDate', 'VegCode', 'VegDescription']], on= joinFields)
 
         # Subset to the desired fields
         DFNAWMAwPCwEvent = DFNAWMAwPCwEvent.loc[:, fieldsToRetain]
@@ -363,29 +364,27 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
         DFNAWMAwPCwEvent.insert(2, 'Year', DFNAWMAwPCwEvent['StartDate'].dt.year)
 
 
+        # Get Number of Plots By Event  (i.e. A, B, C) by event, the norm will be three
+        nawmaPlotCountByEvent = DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode', 'Year'])['TransectID'].nunique().reset_index(name='EventPlotCount')
 
-
-        #Dataframe with NAWAMA, Percent Cover and Event Info
-        DFNAWMAwPCwEvent = outFun[1]
-
-        # Get Number of Plots (i.e. A, B, C) by event, the norm will be three
-        nawmaPlotsByCommunityMonitorCycle = nawmaDFSetup.groupby(['VegCode', 'Year'])['TransectID'].nunique().reset_index(name='PlotCount')
+        # Get Number of Plot by Community Monitoring Cycle
+        nawmaPlotCountComMonCycle = nawmaPlotCountByEvent.groupby(['VegCode', 'Year'])[
+            'EventPlotCount'].sum().reset_index(name='MonitoringCyclePlotCount')
 
 
         #Sum the Total Cover By Species By Community Monitoring Cycle
-        nawmaDFEventSpeciesCover = nawmaDFSetup.groupby(['EventID', 'Species'])['PercentCover'].sum().reset_index(
-            name='TotalCover')
+        nawmaMonCycleTotalCover = DFNAWMAwPCwEvent.groupby(['VegCode', 'Year', 'Species'])['PercentCover'].sum().reset_index(
+            name='MonitoringCycleTotalCover')
 
-        # Join the PlotsByEvent and EventSpeciesCover Dataframes then Calculate the Species Event Percent Cover
-        nawmaDFEventSpeciesCoverPlotsByEvent = pd.merge(nawmaDFEventSpeciesCover, nawmaPlotsByEvent, on='EventID')
+        # Join the Total Cover and Plot Count By Monitoring Cycle Dataframes
+        nawmaMonCycleTCwPC = pd.merge(nawmaMonCycleTotalCover, nawmaPlotCountComMonCycle[['VegCode', 'Year',
+                                'MonitoringCyclePlotCount']], on=['VegCode', 'Year'])
 
-        # Calculate the Nawma (Plots A, B, C) average cover by Event
-        nawmaDFEventSpeciesCoverPlotsByEvent['AverageCover'] = nawmaDFEventSpeciesCoverPlotsByEvent['TotalCover'] / \
-                                                               nawmaDFEventSpeciesCoverPlotsByEvent['PlotCount']
+        # Calculate the Community Monitoring Cycle Average Species Cover
+        nawmaMonCycleTCwPC['MonitoricyCycleAverageCover'] = nawmaMonCycleTCwPC['MonitoringCycleTotalCover'] / \
+                                                               nawmaMonCycleTCwPC['MonitoringCyclePlotCount']
 
-
-
-        return 'success function', nawmaDFEventSpeciesCoverPlotsByEvent
+        return 'success function', nawmaMonCycleTCwPC
 
     except:
         print(f'Failed - NAWMA_CoverByEvent')
