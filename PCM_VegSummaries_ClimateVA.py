@@ -157,7 +157,16 @@ def main():
         # Export all Cover by Monitoring Cycle
         outDFList.append(DFCoverCommunity)
 
-
+        # Derive the Top Two Cover by Monitoring Cycle
+        outFun = NAWMA_HighestCoverByCommunity(DFCoverCommunity)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print(
+                "WARNING - Function NAWMA_HighestCoverByCommunity - " + messageTime + " - Failed - Exiting Script")
+            exit()
+        # Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
+        DFCoverCommunityTopTwo = outFun[1]  # Export to  excel
+        outDFList.append(DFCoverCommunityTopTwo)
 
 
 
@@ -269,6 +278,46 @@ def NAWMA_HighestCoverByMonCycle(inDF):
 
     except:
         print(f'Failed - NAWMA_HighestCoverByMonCycle')
+        exit()
+
+def NAWMA_HighestCoverByCommunity(inDF):
+    """
+    Extracts the Highest Cover Taxon by Community across all years.
+
+    :param inDF: dataframe with the Community Average Percent Cover
+     and event metadata (e.g. Community type, etc.)
+
+    :return: outSummaryDF: Data Frame with the Summary output By Community
+    """
+
+    try:
+        ############################################
+        # Extract the Event Scale Top Two Highest Cover Taxon
+        ############################################
+        # Create copy of the dataframe to be used in the Function
+        inDF = inDF.copy()
+
+        # Set Index to the Composite Key Field
+        inDF.set_index('VegCode', inplace=True)
+
+        # List of Fields to Use in the Group By
+        groupList = ['VegCode']
+
+        # Get the Top Two Cover Records By Event, retaining the index value
+        outSummaryDF = inDF.groupby(groupList, group_keys=False).apply(
+            lambda x: x.nlargest(2, 'CommunityAverageCover'))
+
+        # Push the Index Values Back to fields
+        outSummaryDF.reset_index(inplace=True)
+
+        del inDF
+
+        print(f'Successfully Processed - NAWMA_HighestCoverByCommunity')
+
+        return 'success function', outSummaryDF
+
+    except:
+        print(f'Failed - NAWMA_HighestCoverByCommunity')
         exit()
 
 
@@ -462,7 +511,7 @@ def NAWMA_CoverByCommunity(inDF, taxonRemoveList, DfEvents):
         DFNAWMAwPCwEvent = DFNAWMAwPCwEvent.loc[:, fieldsToRetain]
 
         # Get Number of Plots By Event  (i.e. A, B, C) by event, the norm will be three
-        nawmaPlotCountByEvent = (DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode', 'Year'])['TransectID'].nunique().
+        nawmaPlotCountByEvent = (DFNAWMAwPCwEvent.groupby(['EventID', 'VegCode'])['TransectID'].nunique().
                                  reset_index(name='EventPlotCount'))
 
         # Get Number of Plot by Community
@@ -478,8 +527,8 @@ def NAWMA_CoverByCommunity(inDF, taxonRemoveList, DfEvents):
                                         'CommunityPlotCount']], on=['VegCode'])
 
         # Calculate the Community Average Species Cover
-        nawmaCommunityTCwPC['MonitoringCycleAverageCover'] = nawmaMonCycleTCwPC['CommunityTotalCover'] / \
-                                                             nawmaMonCycleTCwPC['CommunityPlotCount']
+        nawmaCommunityTCwPC['CommunityAverageCover'] = nawmaCommunityTCwPC['CommunityTotalCover'] / \
+                                                             nawmaCommunityTCwPC['CommunityPlotCount']
 
         return 'success function', nawmaCommunityTCwPC
 
