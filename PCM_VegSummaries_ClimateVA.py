@@ -89,24 +89,25 @@ def main():
             print("WARNING - Function joinWEventDataset - Event Scale " + messageTime + " - Failed - Exiting Script")
             exit()
 
-        DFCoverWEvents = outFun[1]
+        DFCoverEvent = outFun[1]
+        outDFList = []
+        outDFList.append(DFCoverEvent)
 
         ########################################
-        # Derive the Top Cover Taxonomy By Event
+        # NAWMA_CoverByMonCycle
         ########################################
-
-        outFun = NAWMA_HighestCoverByEvent(DFCoverWEvents)
+        outFun = NAWMA_HighestCoverByEvent(DFCoverEvent)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function NAWMA_HighestCoverByEvent - " + messageTime + " - Failed - Exiting Script")
             exit()
 
-        outDfEventScale = outFun[1]  # Export to  excel
-        outDFList = []
-        outDFList.append(outDfEventScale)
+        DFCoverEventTopTwo = outFun[1]  # Export to  excel
+
+        outDFList.append(DFCoverEventTopTwo)
 
         ##########################################################
-        # Derive the Top Cover Taxonomy Community Monitoring Cycle
+        # Derive the Top Highest Cover Taxonomy By Community Monitoring Cycle
         ##########################################################
 
         # Calculate NAWMA Community Monitoring Cycle Average Percent Cover (i.e. Sum of All Taxon Percent Cover divided
@@ -118,18 +119,23 @@ def main():
                 "WARNING -  - NAWMA_CoverByMonCycle" + messageTime + " - Failed - Exiting Script")
             exit()
         DFCoverMonCycle = outFun[1]
+        #Export all Cover by Monitoring Cycle
+        outDFList.append(DFCoverMonCycle)
 
+        # Derive the Top Two Cover by Monitoring Cycle
         outFun = NAWMA_HighestCoverByMonCycle(DFCoverMonCycle)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print(
                 "WARNING - Function NAWMA_HighestCoverByMonCycle - " + messageTime + " - Failed - Exiting Script")
             exit()
+        #Out Top Two Aveage Taxony Cover By Community Monitoring Cycle
+        DFCoverMonCycleTopTwo = outFun[1]  # Export to  excel
+        outDFList.append(DFCoverMonCycleTopTwo)
 
-        outDfMonCycle = outFun[1]  # Export to  excel
-        outDFList.append(outDfMonCycle)
-
-
+        ##########################################################
+        # Derive the Top Two Highest Average Cover Taxonomy By Community across all Monitoring Cycles
+        ##########################################################
 
 
 
@@ -203,7 +209,8 @@ def NAWMA_HighestCoverByMonCycle(inDF):
     """
     Extracts the Highest Cover Taxon by Community Monitoring Cycle Year.
 
-    :param inDF: dataframe with the Event Scale Average Percent Cover and event metadata (e.g. Community type, etc.)
+    :param inDF: dataframe with the Community Monitoring Cycle Percent Cover
+     and event metadata (e.g. Community type, etc.)
 
     :return: outSummaryDF: Data Frame with the Summary output By Community Monitoring Cycle
     """
@@ -224,7 +231,7 @@ def NAWMA_HighestCoverByMonCycle(inDF):
         # List of Fields to Use in the Group By
         groupList = ['VegCode', 'Year']
         # Get the Top Two Cover Records By Event, retaining the index value
-        outSummaryDF = inDF.groupby(groupList, group_keys=False).apply(lambda x: x.nlargest(2, 'AverageCover'))
+        outSummaryDF = inDF.groupby(groupList, group_keys=False).apply(lambda x: x.nlargest(2, 'MonitoringCycleAverageCover'))
 
         # Push the Index Values Back to fields
         outSummaryDF.reset_index(inplace=True)
@@ -381,7 +388,7 @@ def NAWMA_CoverByMonCycle(inDF, taxonRemoveList, DfEvents):
                                 'MonitoringCyclePlotCount']], on=['VegCode', 'Year'])
 
         # Calculate the Community Monitoring Cycle Average Species Cover
-        nawmaMonCycleTCwPC['MonitoricyCycleAverageCover'] = nawmaMonCycleTCwPC['MonitoringCycleTotalCover'] / \
+        nawmaMonCycleTCwPC['MonitoringCycleAverageCover'] = nawmaMonCycleTCwPC['MonitoringCycleTotalCover'] / \
                                                                nawmaMonCycleTCwPC['MonitoringCyclePlotCount']
 
         return 'success function', nawmaMonCycleTCwPC
