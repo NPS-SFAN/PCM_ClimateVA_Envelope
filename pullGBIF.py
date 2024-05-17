@@ -71,8 +71,16 @@ def main():
             print("WARNING - Function getTaxonomy - " + messageTime + " - Failed - Exiting Script")
             exit()
 
+        #########################################################
+        # Pull Occurrence Data
+        #########################################################
 
-
+        #STOPPED HERE 5/17/2024 - KRS
+        outFun = processOccurrence(inDF, lookupField)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function processOccurrence - " + messageTime + " - Failed - Exiting Script")
+            exit()
 
 
 
@@ -105,29 +113,46 @@ def processTaxonomy(inDF, lookupField):
     """
     try:
 
-        #Add the GBIF Key field to dataframe
+        #Add the GBIF Species fields to dataframe
         inDF['GBIFKey'] = pd.Series([pd.NA] * len(inDF), dtype='Int64')
+        inDF['ScientificNameGBIF'] = pd.Series([pd.NA] * len(inDF), dtype='object')
+        inDF['Confidence'] = pd.Series([pd.NA] * len(inDF), dtype='Int8')
+        inDF['MatchType'] = pd.Series([pd.NA] * len(inDF), dtype='object')
 
         #Iterate through the inDF
         for index, row in inDF.iterrows():
             taxonLU = row.get(lookupField)
 
-            #Hit the GBIF Species API to pull the GBIF Key value via the 'Scientific Name'
+            #Hit the GBIF Species API to pull the GBIF Key value via the 'Scientific Name', using best match, returning
+            #the GBIFKey value, confidence and match type attributes, option for other info is desired.
             outFun = getTaxonomy(taxonLU)
             if outFun[0].lower() != "success function":
                 messageTime = timeFun()
                 print("WARNING - Function getTaxonomy - failed for - " + taxonLU + ' - ' + messageTime + " "
                     " - Exiting Script")
                 exit()
-            # Update the GBIFKey field to the GBIF Key value
-            inDF.at[index, 'GBIFKey'] = outGBIFKey
 
+            outGBIFSpecies = outFun[1]
+
+            outGBIFKey = outGBIFSpecies['GBIFKey'][0]
+            outSciName = outGBIFSpecies['scientificName'][0]
+            outConfidence = outGBIFSpecies['confidence'][0]
+            outMatchType = outGBIFSpecies['matchType'][0]
+
+            # Update the GBIF Species  fields
+            inDF.at[index, 'GBIFKey'] = outGBIFKey
+            inDF.at[index, 'ScientificNameGBIF'] = outSciName
+            inDF.at[index, 'Confidence'] = outConfidence
+            inDF.at[index, 'MatchType'] = outMatchType
+
+            messageTime = timeFun()
             scriptMsg = f'Successfully defined GBIF Key for - {taxonLU} - {messageTime}'
             print(scriptMsg)
             logFile = open(logFileName, "a")
             logFile.write(scriptMsg + "\n")
             logFile.close()
 
+        messageTime = timeFun()
         scriptMsg = f'Successfully Completed function processTaxonomy - {messageTime}'
         print(scriptMsg)
         logFile = open(logFileName, "a")
@@ -136,7 +161,6 @@ def processTaxonomy(inDF, lookupField):
 
         return 'success function', inDF
 
-
     except:
         print(f'Failed - processTaxonomy')
         exit()
@@ -144,25 +168,42 @@ def processTaxonomy(inDF, lookupField):
 
 def getTaxonomy(taxonLU):
     """
-    Routine hit's the GBIF Species API and returns the GDBIF Key value
+    Routine hit's the GBIF Species API (https://pygbif.readthedocs.io/en/latest/modules/species.html),
+    via the passed species scientific name field uses the species.name_backbone service to return the best match GDBIF
+    record.  Return the GBIF Key/UsageKey, Confidence in taxonomy match, and the type of match.
+
+    Option to return more GBIF species information if desired
 
     :param taxonLU: Taxonomic Scientific Name
 
-    :return: outGBIFKey: Series value with the lookup GBIF Key
+    :return: outGBIFSpecies: Dataframe with the above Taxonomy GBIF values (GBIF Key, Confidence in match and type of
+    match.
 
     """
     try:
 
+        #Use the GBIF pygbif species.name_backbone() to pull the best match
+        outGBIF= species.name_backbone(taxonLU, rank="species", verbose=False)
 
-        species.name_lookup(taxonLU, rank="species", verbose=True)
+        #Pull variables of interest
+        usageKey = outGBIF['usageKey']
+        scientificName = outGBIF['scientificName']
+        confidence = outGBIF['confidence']
+        matchType = outGBIF['matchType']
 
+        #Create Dictionary:
+        workDict = {'GBIFKey': usageKey,
+                    'scientificName': scientificName,
+                    'confidence': confidence,
+                    'matchType': matchType}
 
-        return outGBIFKey
+        #Output Dataframe - must define an index value for the dataframe to be created
+        outGBIFSpecies = pd.DataFrame([workDict], index=['GBIFIndex'])
+
+        return 'success function', outGBIFSpecies
     except:
         print(f'Failed - getTaxonomy')
         exit()
-
-
 
 def timeFun():
     try:
