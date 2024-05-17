@@ -26,7 +26,6 @@ import os
 import session_info
 import traceback
 from datetime import datetime
-import xlsxwriter
 
 # PCM Database
 inDB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\VitalSigns\PlantCommunities\Data\Database\SFAN_PlantCommunities_BE_20240306.accdb'
