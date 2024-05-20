@@ -30,14 +30,14 @@ import session_info
 import traceback
 from datetime import datetime
 from pygbif import species
+from pygbif import occurrences as occ
 
 #File (Excel/CSV) with vegtation taxon to be idenfities
-inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_NAWMA_Vegetation_ClimateVA_20240516.xlsx'
+inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_NAWMA_Vegetation_ClimateVA_Testing.xlsx'
 #Worksheet to process if the inTable is an excel file
 inWorksheet = 'NAWMACoverCommunityTopTwo'
 #Field in the Vegetation worksheet that defined the scientific name
 lookupField = 'Species'
-
 
 # Output Name, OutDir, and Workspace
 outName = 'PCM_NAWMA_TopTwo_GBIF'  # Output name for excel file and logile
@@ -46,11 +46,18 @@ workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
 
+#Occurrence Download Parameters
+#Number of records to download per GBIF Occurrence Call on occurrence.search
+chunkSize = 300
+#Total Number of GBIF records to download per
+totalRecords = 10000
+
 
 def main():
     try:
         session_info.show()
 
+        outDFList = []
         ########################
         #Read in the Taxon Table
         ########################
@@ -71,20 +78,34 @@ def main():
             print("WARNING - Function getTaxonomy - " + messageTime + " - Failed - Exiting Script")
             exit()
 
-        #########################################################
-        # Pull Occurrence Data
-        #########################################################
+        DFSpeciesTaxonomy = outFun[1]
+        #Export Dataframe with the Defined GBIF Species Fields
+        outSpeciesList = f'{outDir}\\{outName}_Species_{dateNow}.xlsx'
+        DFSpeciesTaxonomy.to_csv(outSpeciesList)
 
-        #STOPPED HERE 5/17/2024 - KRS
-        outFun = processOccurrence(inDF, lookupField)
+
+        ############################################################
+        # Pull Occurrence Data via the PYGBIF API Occurrences.search
+        ############################################################
+
+        outFun = processOccurrence(DFSpeciesTaxonomy,  chunkSize, totalRecords)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function processOccurrence - " + messageTime + " - Failed - Exiting Script")
             exit()
+        #Output Occurrence List
+        outDFOccurrenceList = outFun[1]
 
-
-
-
+        ####################
+        #Export Taxonomy and Occurrence Dataframes.  Occurrence dataframe will be subset as well
+        #Option to remove fields
+        outPathName = f'{outDir}\\{outName}_Occurrences_{dateNow}.xlsx'
+        outFun = exportOccurrence(outDFOccurrenceList, fieldToRetain, outPathName)
+        if outFun[0].lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function getOccurrence - failed for - " + taxonLU + ' - ' + messageTime + " "
+                                                                                                   " - Exiting Script")
+            exit()
 
 
     except:
@@ -99,8 +120,132 @@ def main():
     finally:
         exit()
 
+def processOccurrence(inDF, chunkSize, totalRecords):
+    """
+    Parent Function where processing of the GBIF taxonomies identified in the 'processTaxonomy' routine (i.e. all the
+    defined in the input table species list) are pulled from the GBIF occurrence module
+    https://pygbif.readthedocs.io/en/latest/modules/occurrence.html
 
-def processTaxonomy(inDF, lookupField):
+    :param inDF: dataframe with taxonomy records to be pulled with defined GBIF Taxon ID.
+    :param chunkSize: Number of records to be pulled in the occurrence API pull
+    :param totalRecords: Total Number of records to be pulled by GBIF Taxon Key in the occurrence API pull
+
+    :return: outOccurenceDF: List with dataframes per Taxon Occurrence records pulled from GBIF
+
+    """
+    try:
+
+        #List to hold the output dataframes with the occurrence data by Taxon
+
+        outDFOccurrenceList = []
+
+        #Iterate through the inDF
+        for index, row in inDF.iterrows():
+            taxonLU = row.get('ScientificNameGBIF')
+            GBIFKeyLU = row.get('GBIFKey')
+            #Hit the GBIF Species API to pull the GBIF Key value via the 'Scientific Name', using best match, returning
+            #the GBIFKey value, confidence and match type attributes, option for other info is desired.
+            outFun = getOccurrence(GBIFKeyLU, chunkSize, totalRecords)
+            if outFun[0].lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function getOccurrence - failed for - " + taxonLU + ' - ' + messageTime + " "
+                    " - Exiting Script")
+                exit()
+            #
+            outGBIFSpecies = outFun[1]
+            #outDFOccurrenceList.extend(outGBIFSpecies)
+            outDFOccurrenceList.append(outGBIFSpecies)
+            messageTime = timeFun()
+            scriptMsg = f'Successfully ProcessOccurrence Data for - {GBIFKeyLU} - for Taxon - {taxonLU }- {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function', outDFOccurrenceList
+
+    except:
+        print(f'Failed - processOccurrence')
+        exit()
+
+def getOccurrence(GBIFKey, chunkSize, totalRecords):
+    """
+    Routine hit's the GBIF Occurrence API (https://pygbif.readthedocs.io/en/latest/modules/occurrence.html),
+    via the passed GBIF Taxon Key pulled from the processTaxonomy routine. Returns occurrence information for the
+    taxonomy included the following fields: TBD
+
+    Option to return more GBIF Occurrence information if desired - not developed
+
+    :param GBIFKey: GBIF Taxon Key Identification field pulled from the GBIF Species API
+    :param chunkSize: Number of records to be pulled in the occurrence API pull
+    :param totalRecords: Total Number of records to be pulled by GBIF Taxon Key in the occurrence API pull
+
+    :return: outGBIFOccurrence: Dataframe with the Occurrences in the GBIF database for the defined GBIFKey values.
+    """
+    try:
+
+        #List to hold all the chuncked results
+        occurrencList = []
+        #Use the GBIF pygbif occurrences.search to download by Chunks limited to 300 records per API pull
+        for offset in range(0, totalRecords, chunkSize):
+            occurrence_data = occ.search(taxonKey=GBIFKey, hasCoordinate=True, publishingCountry='US',
+                                         decimdalLatitude='26,49', decimalLongitude='-125,-66', year='1990,2024',
+                                         limit=chunkSize, offset=offset)
+            #Pull Results Key to Dictionary
+            results = occurrence_data['results']
+            #If not results break from loop
+            if not results:
+                print(f"No more records to fetch at offset {offset}. Exiting loop.")
+                break
+
+            #Add Results Dictionary to be added to the Taxon List by Chunk of records
+            occurrencList.extend(results)
+            print(f"Fetched {len(results)} records starting from offset {offset} - GBIFKey - {GBIFKey}")
+
+        outGBIFOccurrence = pd.DataFrame(occurrencList)
+
+        return 'success function', outGBIFOccurrence
+    except:
+        print(f'Failed - getOccurrence')
+        exit()
+
+def exportOccurrence(inList, fieldToRetain, outPathName):
+    """
+    Subsets and exports the output Occurrence records pulled in the 'getOccurrence' routine.
+
+    :param inList: Occurrence Records list, will be exported to a dataframe prior to export to .csv
+    :param fieldToRetain: Fields in the Occurrence Records output to be exported (i.e. subset)
+    :param outPathName: Full path for the exported .csv occurrence records
+
+    :return: exported .csv file of subsetted fields
+    """
+    try:
+
+        #Convert list to a dataframe
+        dfOcc = pd.DataFrame(inList)
+
+        # Subset to the desired fields
+        outDF = dfOcc.loc[:, fieldToRetain]
+
+        #Export to .csv file
+        outDF.to_csv(outPathName)
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully Completed Exported Occurrence Records {outPathName} - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        return 'success function', outGBIFOccurrence
+
+    except:
+        print(f'Failed - exportOccurrence')
+        exit()
+
+
+
+def processTaxonomy(inDFTaxonomy, lookupField):
     """
     Parent Function where processing of the input table is performed GBIF Taxonomy
 
@@ -113,14 +258,15 @@ def processTaxonomy(inDF, lookupField):
     """
     try:
 
+
         #Add the GBIF Species fields to dataframe
-        inDF['GBIFKey'] = pd.Series([pd.NA] * len(inDF), dtype='Int64')
-        inDF['ScientificNameGBIF'] = pd.Series([pd.NA] * len(inDF), dtype='object')
-        inDF['Confidence'] = pd.Series([pd.NA] * len(inDF), dtype='Int8')
-        inDF['MatchType'] = pd.Series([pd.NA] * len(inDF), dtype='object')
+        inDFTaxonomy['GBIFKey'] = pd.Series([pd.NA] * len(inDFTaxonomy), dtype='Int64')
+        inDFTaxonomy['ScientificNameGBIF'] = pd.Series([pd.NA] * len(inDFTaxonomy), dtype='object')
+        inDFTaxonomy['Confidence'] = pd.Series([pd.NA] * len(inDFTaxonomy), dtype='Int8')
+        inDFTaxonomy['MatchType'] = pd.Series([pd.NA] * len(inDFTaxonomy), dtype='object')
 
         #Iterate through the inDF
-        for index, row in inDF.iterrows():
+        for index, row in inDFTaxonomy.iterrows():
             taxonLU = row.get(lookupField)
 
             #Hit the GBIF Species API to pull the GBIF Key value via the 'Scientific Name', using best match, returning
@@ -140,10 +286,10 @@ def processTaxonomy(inDF, lookupField):
             outMatchType = outGBIFSpecies['matchType'][0]
 
             # Update the GBIF Species  fields
-            inDF.at[index, 'GBIFKey'] = outGBIFKey
-            inDF.at[index, 'ScientificNameGBIF'] = outSciName
-            inDF.at[index, 'Confidence'] = outConfidence
-            inDF.at[index, 'MatchType'] = outMatchType
+            inDFTaxonomy.at[index, 'GBIFKey'] = outGBIFKey
+            inDFTaxonomy.at[index, 'ScientificNameGBIF'] = outSciName
+            inDFTaxonomy.at[index, 'Confidence'] = outConfidence
+            inDFTaxonomy.at[index, 'MatchType'] = outMatchType
 
             messageTime = timeFun()
             scriptMsg = f'Successfully defined GBIF Key for - {taxonLU} - {messageTime}'
@@ -159,7 +305,7 @@ def processTaxonomy(inDF, lookupField):
         logFile.write(scriptMsg + "\n")
         logFile.close()
 
-        return 'success function', inDF
+        return 'success function', inDFTaxonomy
 
     except:
         print(f'Failed - processTaxonomy')
