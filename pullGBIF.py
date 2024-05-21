@@ -12,10 +12,20 @@ Second pull the Taxon Occurrences with spatial locations (Lat/Lon) in the occurr
 Export identified Taxon in GBIF database to a .csv file
 
 Input:
-    speciesLookup - Speices Lookup Table with defined Taxon to identified
+    speciesLookup - Species Lookup Table with defined Taxon to be cross-walked and harvested from GBIF
 
 Output:
-    table with the GB
+    Two Tables: 1) Table defining the GBIF Taxonomy GBIFKey based on a crosswalk to the defined lookupField field (e.g.
+     Species or Scientific Name, etc.) in the inTable, and inWorksheet taxon table.
+     2) For the defined GBIF Taxon in table out pulls the GBIF occurrences with defined GBIFKey definitions, additional
+     criteria on pulled occurrences is:
+
+    hasCoordinates = True - must have lat/lon values
+    publishingCountry = US - place of occurrence is the United States,
+    decimdalLatitude = between 49 and 26 degrees  - Limiting Latitude to the CONUS
+    decimalLongitude = between -66 and -125 - Limiting Longitutde to the CONUS
+    years 1990-2024 - only records between 1990 and 2024.
+
 
 Python Environment: PCM_VegClimateVA - Python 3.11
 
