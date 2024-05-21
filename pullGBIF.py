@@ -33,7 +33,7 @@ from pygbif import species
 from pygbif import occurrences as occ
 
 #File (Excel/CSV) with vegtation taxon to be idenfities
-inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_NAWMA_Vegetation_ClimateVA_Testing.xlsx'
+inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_NAWMA_Vegetation_ClimateVA_20240517.xlsx'
 #Worksheet to process if the inTable is an excel file
 inWorksheet = 'NAWMACoverCommunityTopTwo'
 #Field in the Vegetation worksheet that defined the scientific name
@@ -145,12 +145,12 @@ def processOccurrence(inDF, chunkSize, totalRecords, fieldToRetain):
 
         #Iterate through the inDF
         for index, row in inDF.iterrows():
-            taxonLU = row.get('ScientificNameGBIF')
+            taxonLU = row.get('Species')
             GBIFKeyLU = row.get('GBIFKey')
             VegCodeLU = row.get('VegCode')
             #Hit the GBIF Species API to pull the GBIF Key value via the 'Scientific Name', using best match, returning
             #the GBIFKey value, confidence and match type attributes, option for other info is desired.
-            outFun = getOccurrence(GBIFKeyLU, chunkSize, totalRecords, fieldToRetain, VegCodeLU)
+            outFun = getOccurrence(GBIFKeyLU, taxonLU, chunkSize, totalRecords, fieldToRetain, VegCodeLU)
             if outFun[0].lower() != "success function":
                 messageTime = timeFun()
                 print("WARNING - Function getOccurrence - failed for - " + taxonLU + ' - ' + messageTime + " "
@@ -176,7 +176,7 @@ def processOccurrence(inDF, chunkSize, totalRecords, fieldToRetain):
         print(f'Failed - processOccurrence')
         exit()
 
-def getOccurrence(GBIFKey, chunkSize, totalRecords, fieldsToRetain, VegCodeLU):
+def getOccurrence(GBIFKey, taxonLU, chunkSize, totalRecords, fieldsToRetain, VegCodeLU):
     """
     Routine hit's the GBIF Occurrence API (https://pygbif.readthedocs.io/en/latest/modules/occurrence.html),
     via the passed GBIF Taxon Key pulled from the processTaxonomy routine. Returns a subset of occurrence information
@@ -195,6 +195,7 @@ def getOccurrence(GBIFKey, chunkSize, totalRecords, fieldsToRetain, VegCodeLU):
     https://pygbif.readthedocs.io/en/latest/modules/occurrence.html#pygbif.occurrences.download
 
     :param GBIFKey: GBIF Taxon Key Identification field pulled from the GBIF Species API
+    :param taxonLU: Source Taxon Name (i.e. pulled from PCM, etc. passed in the 'inTable', 'inWorksheet', 'lookupField'
     :param chunkSize: Number of records to be pulled in the occurrence API pull
     :param totalRecords: Total Number of records to be pulled by GBIF Taxon Key in the occurrence API pull
     :param fieldsToRetain: Fields in the Occurrence Records output to be exported (i.e. subset)
@@ -227,8 +228,11 @@ def getOccurrence(GBIFKey, chunkSize, totalRecords, fieldsToRetain, VegCodeLU):
         # Subset to the desired fields
         outGBIFOccurrence = outGBIFOccurrence.loc[:, fieldsToRetain]
 
-        # Add 'VegCode' field
+        #Add 'VegCode' field
         outGBIFOccurrence.insert(2, 'VegCode', VegCodeLU)
+
+        #Add 'VegCode' field
+        outGBIFOccurrence.insert(3, 'scientificNameLookup', taxonLU)
 
         return 'success function', outGBIFOccurrence
     except:
@@ -271,7 +275,7 @@ def processTaxonomy(inDFTaxonomy, lookupField):
             outGBIFSpecies = outFun[1]
 
             outGBIFKey = outGBIFSpecies['GBIFKey'][0]
-            outSciName = outGBIFSpecies['scientificName'][0]
+            outSciName = outGBIFSpecies['scientificNameGBIF'][0]
             outConfidence = outGBIFSpecies['confidence'][0]
             outMatchType = outGBIFSpecies['matchType'][0]
 
@@ -329,7 +333,7 @@ def getTaxonomy(taxonLU):
 
         #Create Dictionary:
         workDict = {'GBIFKey': usageKey,
-                    'scientificName': scientificName,
+                    'scientificNameGBIF': scientificName,
                     'confidence': confidence,
                     'matchType': matchType}
 
