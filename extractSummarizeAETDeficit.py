@@ -1,6 +1,11 @@
 """
-extractSummarizeAETDeficit.py
-Script will pull
+extractAETDeficit.py
+Script extracts point values for the defined point locations (e.g. Monitoring Sites, GBIF occurrences, etc.) and
+for the defined rasters (e.g. NPS Water Balance Data). Processing assumes spatial coordinates in the point locations
+and rasters are in the same projection (e.g. GCS WGS 84).
+
+Raster point extraction is accomplished using the Rasterio (https://rasterio.readthedocs.io/en/stable/) package.
+
 Input:
     monitoringLoc - Table with defined monitoring locations (e.g. PCM Plots)
     gbifLoc - Extracted Taxon occurrences from GBIF across the CONUS
@@ -16,7 +21,7 @@ Output:
 
 
 Python Environment: PCM_VegClimateVA - Python 3.11
-Libraries: Geopandas, Raterio, Pandas
+Libraries: Geopandas, Rasterio, Pandas, Numpy
 
 Date Developed - May 2024
 Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Network Inventory and Monitoring
@@ -24,6 +29,7 @@ Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Netwo
 
 
 import pandas as pd
+import numpy as np
 import sys
 import os
 import session_info
@@ -40,13 +46,13 @@ monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAs
 monitoringLocDic = {'Source': 'PCM', 'IDField': 'Name', 'Latitude': 'Latitude', 'Longitude': 'Longitude', 'VegType': 'SiteType'}
 
 #Excel file with the GBIF Locations
-gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\PCM_NAWMA_TopTwo_GBIF_Occurrences_20240521.csv'
+gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\PCM_NAWMA_TopTwo_GBIF_Occurrences_20240521_Test.csv'
 #Monitoring Locations Dictionary with IDField, Latitude, Longitude and Vegation Type field definitions.
 gbifLocDic = {'Source': 'GBIF', 'IDField': 'key', 'Latitude': 'decimalLatitude', 'Longitude': 'decimalLongitude',
               'VegType': 'VegCode'}
 
 #List or Dictionary of WB Rasters to process
-wbDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
+rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
              'Temporal': ["Historic", "MidCentury", "Historic",
                           "MidCentury"],
              'Path': [r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Historic\V_1_5_annual_gridmet_historical_AET_1981_2010_annual_means_cropped_units_mm_GCS.tif',
@@ -56,7 +62,7 @@ wbDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
 
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_AETDeficit'  # Output name for excel file and logile
+outName = 'PCM_AETDeficitTest'  # Output name for excel file and logile
 outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
@@ -83,22 +89,27 @@ def main():
         #########################################################
         # Import and Compile the Point Tables (Monitoring Loc and GBIF)
         #########################################################
-        outFun = extractWB(outPointsDF)
+        outFun = extractWB(outPointsDF, rasterDataDic)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function extractWB - " + messageTime + " - Failed - Exiting Script")
             exit()
-
+        #Output Dataframe with extracted Raster
         outPointsWBDF = outFun[1]
 
+        # Define Path to Output Summary Table
+        outPath = f'{outDir}\\{outName}_{dateNow}.csv'
 
-
-
+        outPointsWBDF.to_csv(outPath, index=False)
 
         messageTime = timeFun()
-        scriptMsg = f'Successfully  - {outPathName} - {messageTime}'
+        scriptMsg = f'Exported Extracted Points Table to - {outPath} - {messageTime}'
         print(scriptMsg)
         logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+
+        scriptMsg = f'Successfully completed - extractSummarizeAETDeficit.py - {messageTime}'
+        print(scriptMsg)
         logFile.write(scriptMsg + "\n")
         logFile.close()
 
@@ -126,7 +137,7 @@ def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
     :param gbifLoc: GBIF Locations Tables
     :param gbifLocDic: GBIF Locations Tables field dictionary
 
-    :return: outPointsDF: data frame with the monitoring and GBIF files appends, with a field subset and field rename.
+    :return: outPointsDF: data frame with the monitoring and GBIF files appended, with a field subset and field rename.
 
     """
     try:
@@ -212,39 +223,6 @@ def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
 
         messageTime = timeFun()
         scriptMsg = f'Successfully preprocessed and merged Locations and GBIF tables - {messageTime}'
-        print (scriptMsg)
-
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
-
-        return 'success function', outPointsDF
-
-    except:
-        print(f'Failed - compilePointFiles')
-        exit()
-
-
-def extractWB(outPointsDF, rasterDataDic):
-    """
-    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
-    dictionary - rasterDataDic (i.e. NPS water balance).
-
-
-    :param outPointsDF: Dataframe with points defining where to extract raster values.
-    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
-
-    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
-
-    """
-    try:
-
-
-
-
-
-        messageTime = timeFun()
-        scriptMsg = f'Successfully extracted water balance data - {messageTime}'
         print(scriptMsg)
 
         logFile = open(logFileName, "a")
@@ -258,6 +236,78 @@ def extractWB(outPointsDF, rasterDataDic):
         exit()
 
 
+def extractWB(pointsDF, rasterDataDic):
+    """
+    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
+    dictionary - rasterDataDic (i.e. NPS water balance).
+
+
+    :param pointsDF: Dataframe with points defining where to extract raster values.
+    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
+
+    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
+
+    """
+    try:
+
+        #Convert the Raster Dictionary to a Dataframe - to iterate through
+        rasterDF = pd.DataFrame.from_dict(rasterDataDic, orient='columns')
+
+        #Iterate through the Rasters
+        for index, row in rasterDF.iterrows():
+            variableLU = row.get("Variable")
+            temporalLU = row.get("Temporal")
+            pathLU = row.get("Path")
+
+            fieldName = f'{variableLU}_{temporalLU}'
+
+            'Check that raster path exists'
+            if os.path.exists(pathLU) != True:
+                messageTime = timeFun()
+                msgScript = (f'Warning Raster Path - {pathLu} - doesnt exist - exiting script')
+                print(scriptMsg)
+                logFile = open(logFileName, "a")
+                logFile.write(scriptMsg + "\n")
+                logFile.close()
+                sys.exit()
+
+            #Open the raster file
+            raster = rasterio.open(pathLU)
+
+            #Extact the Raster values
+            # Apply the function to each row in the DataFrame
+            pointsDF[fieldName] = pointsDF.apply(lambda row: get_raster_value(row['Latitude'], row['Longitude'],
+                                                                              raster), axis= 1)
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully extracted water balance data for {fieldName} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        outPointsWBDF = pointsDF
+        return 'success function', outPointsWBDF
+
+    except:
+        print(f'Failed - compilePointFiles')
+        exit()
+
+# Function to extract raster value at a given point
+def get_raster_value(lat, lon, raster):
+    try:
+        # Convert latitude and longitude to the raster's coordinate system
+        row, col = raster.index(lon, lat)
+
+        # Check if the indices are within the raster bounds
+        if (0 <= row < raster.height) and (0 <= col < raster.width):
+            value = raster.read(1)[row, col]
+        else:
+            value = np.nan  # Return NaN if the point is out of bounds
+    except IndexError:
+        value = np.nan  # Handle case where raster.index() fails
+    return value
 
 def timeFun():
     from datetime import datetime
