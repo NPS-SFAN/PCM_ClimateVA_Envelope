@@ -45,7 +45,7 @@ monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAs
 monitoringLocDic = {'Source': 'PCM', 'IDField': 'Name', 'Latitude': 'Latitude', 'Longitude': 'Longitude', 'VegType': 'SiteType'}
 
 #Excel file with the GBIF Locations
-gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\PCM_NAWMA_TopTwo_GBIF_Occurrences_20240521_Test.csv'
+gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\PCM_NAWMA_TopTwo_GBIF_Occurrences_20240521.csv'
 #Monitoring Locations Dictionary with IDField, Latitude, Longitude and Vegation Type field definitions.
 gbifLocDic = {'Source': 'GBIF', 'IDField': 'key', 'Latitude': 'decimalLatitude', 'Longitude': 'decimalLongitude',
               'VegType': 'VegCode'}
@@ -61,12 +61,11 @@ rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
 
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_AETDeficitTest_RS2'  # Output name for excel file and logile
+outName = 'PCM_AETDeficit_Parallel'  # Output name for excel file and logile
 outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
-
 
 
 def main():
@@ -235,69 +234,11 @@ def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
         exit()
 
 
-def extractWB(pointsDF, rasterDataDic):
-    """
-    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
-    dictionary - rasterDataDic (i.e. NPS water balance).
-
-
-    :param pointsDF: Dataframe with points defining where to extract raster values.
-    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
-
-    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
-
-    """
-    try:
-
-        #Convert the Raster Dictionary to a Dataframe - to iterate through
-        rasterDF = pd.DataFrame.from_dict(rasterDataDic, orient='columns')
-
-        #Iterate through the Rasters
-        for index, row in rasterDF.iterrows():
-            variableLU = row.get("Variable")
-            temporalLU = row.get("Temporal")
-            pathLU = row.get("Path")
-
-            fieldName = f'{variableLU}_{temporalLU}'
-
-            'Check that raster path exists'
-            if os.path.exists(pathLU) != True:
-                messageTime = timeFun()
-                msgScript = (f'Warning Raster Path - {pathLu} - doesnt exist - exiting script')
-                print(scriptMsg)
-                logFile = open(logFileName, "a")
-                logFile.write(scriptMsg + "\n")
-                logFile.close()
-                sys.exit()
-
-            #Open the raster file
-            raster = rasterio.open(pathLU)
-
-            #Extact the Raster values
-            # Apply the function to each row in the DataFrame
-            pointsDF[fieldName] = pointsDF.apply(lambda row: get_raster_value(row['Latitude'], row['Longitude'],
-                                                                              raster), axis= 1)
-
-            messageTime = timeFun()
-            scriptMsg = f'Successfully extracted water balance data for {fieldName} - {messageTime}'
-            print(scriptMsg)
-
-            logFile = open(logFileName, "a")
-            logFile.write(scriptMsg + "\n")
-            logFile.close()
-
-        outPointsWBDF = pointsDF
-        return 'success function', outPointsWBDF
-
-    except:
-        print(f'Failed - extractWB')
-        exit()
-
 def extractWBP(pointsDF, rasterDataDic):
     """
     For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
-    dictionary - rasterDataDic (i.e. NPS water balance). Parallel Processing to speed up
-
+    dictionary - rasterDataDic (i.e. NPS water balance). Parallel Processing via ThreadPoolExecutor.
+    is being used to increase processing speed
 
     :param pointsDF: Dataframe with points defining where to extract raster values.
     :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
@@ -342,7 +283,7 @@ def extractWBP(pointsDF, rasterDataDic):
 
             # Use ThreadPoolExecutor for parallel processing
             with ThreadPoolExecutor() as executor:
-                futures = {executor.submit(get_raster_value2, lat, lon, raster, raster_data): i for i, (lat, lon) in
+                futures = {executor.submit(get_raster_value, lat, lon, raster, raster_data): i for i, (lat, lon) in
                            enumerate(zip(lats, lons))}
                 results = [None] * len(futures)  # Initialize a list to store results in the correct order
                 for future in as_completed(futures):
@@ -364,90 +305,16 @@ def extractWBP(pointsDF, rasterDataDic):
         return 'success function', outPointsWBDF
 
     except:
-        print(f'Failed - extractWB')
+        print(f'Failed - extractWBP')
         exit()
 
 
 
-def extractWBRS(pointsDF, rasterDataDic):
-    """
-    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
-    dictionary - rasterDataDic (i.e. NPS water balance).  Extracting via Raterstats library
 
 
-    :param pointsDF: Dataframe with points defining where to extract raster values.
-    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
 
-    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
-
-    """
-    try:
-
-        #Convert the Raster Dictionary to a Dataframe - to iterate through
-        rasterDF = pd.DataFrame.from_dict(rasterDataDic, orient='columns')
-
-        # Convert to a list of tuples
-        points = list(zip(pointsDF['Longitude'], pointsDF['Latitude']))
-
-        #Iterate through the Rasters
-        for index, row in rasterDF.iterrows():
-            variableLU = row.get("Variable")
-            temporalLU = row.get("Temporal")
-            pathLU = row.get("Path")
-
-            fieldName = f'{variableLU}_{temporalLU}'
-
-            'Check that raster path exists'
-            if os.path.exists(pathLU) != True:
-                messageTime = timeFun()
-                msgScript = (f'Warning Raster Path - {pathLu} - doesnt exist - exiting script')
-                print(scriptMsg)
-                logFile = open(logFileName, "a")
-                logFile.write(scriptMsg + "\n")
-                logFile.close()
-                sys.exit()
-
-
-            #Extact the Raster values
-            # Perform point query
-            values = point_query(points, pathLU)
-
-            # Add the results to the DataFrame
-            pointsDF[fieldName] = values
-
-            messageTime = timeFun()
-            scriptMsg = f'Successfully extracted water balance data for {fieldName} - {messageTime}'
-            print(scriptMsg)
-
-            logFile = open(logFileName, "a")
-            logFile.write(scriptMsg + "\n")
-            logFile.close()
-
-        outPointsWBDF = pointsDF
-        return 'success function', outPointsWBDF
-
-    except:
-        print(f'Failed - extractWBRS')
-        exit()
-
-
+def get_raster_value(lat, lon, raster, raster_data):
 # Function to extract raster value at a given point
-def get_raster_value(lat, lon, raster):
-    try:
-        # Convert latitude and longitude to the raster's coordinate system
-        row, col = raster.index(lon, lat)
-
-        # Check if the indices are within the raster bounds
-        if (0 <= row < raster.height) and (0 <= col < raster.width):
-            value = raster.read(1)[row, col]
-        else:
-            value = np.nan  # Return NaN if the point is out of bounds
-    except IndexError:
-        value = np.nan  # Handle case where raster.index() fails
-    return value
-
-
-def get_raster_value2(lat, lon, raster, raster_data):
     try:
         # Convert latitude and longitude to the raster's coordinate system
         row, col = raster.index(lon, lat)
