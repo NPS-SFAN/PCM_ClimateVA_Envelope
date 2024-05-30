@@ -108,14 +108,14 @@ def main():
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
 
-        scriptMsg = f'Successfully completed - extractSummarizeAETDeficit.py - {messageTime}'
+        scriptMsg = f'Successfully completed - extractAETDeficit.py - {messageTime}'
         print(scriptMsg)
         logFile.write(scriptMsg + "\n")
         logFile.close()
 
     except:
         messageTime = timeFun()
-        scriptMsg = "Exiting Error - extractSummarizeAETDeficit.py - " + messageTime
+        scriptMsg = "Exiting Error - extractAETDeficit.py - " + messageTime
         print(scriptMsg)
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
