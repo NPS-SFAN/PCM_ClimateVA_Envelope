@@ -37,7 +37,6 @@ import traceback
 from datetime import datetime
 #Packages for GIS point extract
 import rasterio
-from rasterstats import point_query
 
 #Excel file with the monitoring Locations
 monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_Plot_Locations_All_wNPSWB_GCS.xlsx'
@@ -61,7 +60,7 @@ rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
 
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_AETDeficit_Parallel'  # Output name for excel file and logile
+outName = 'PCM_AETDeficit'  # Output name for excel file and logile
 outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
