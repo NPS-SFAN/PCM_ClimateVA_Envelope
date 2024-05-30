@@ -37,8 +37,7 @@ import traceback
 from datetime import datetime
 #Packages for GIS point extract
 import rasterio
-from rasterio.transform import from_origin
-from rasterio.enums import Resampling
+from rasterstats import point_query
 
 #Excel file with the monitoring Locations
 monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_Plot_Locations_All_wNPSWB_GCS.xlsx'
@@ -62,7 +61,7 @@ rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
 
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_AETDeficitTest'  # Output name for excel file and logile
+outName = 'PCM_AETDeficitTest_RS2'  # Output name for excel file and logile
 outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
@@ -89,10 +88,10 @@ def main():
         #########################################################
         # Import and Compile the Point Tables (Monitoring Loc and GBIF)
         #########################################################
-        outFun = extractWB(outPointsDF, rasterDataDic)
+        outFun = extractWBP(outPointsDF, rasterDataDic)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
-            print("WARNING - Function extractWB - " + messageTime + " - Failed - Exiting Script")
+            print("WARNING - Function extractWBP - " + messageTime + " - Failed - Exiting Script")
             exit()
         #Output Dataframe with extracted Raster
         outPointsWBDF = outFun[1]
@@ -291,8 +290,146 @@ def extractWB(pointsDF, rasterDataDic):
         return 'success function', outPointsWBDF
 
     except:
-        print(f'Failed - compilePointFiles')
+        print(f'Failed - extractWB')
         exit()
+
+def extractWBP(pointsDF, rasterDataDic):
+    """
+    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
+    dictionary - rasterDataDic (i.e. NPS water balance). Parallel Processing to speed up
+
+
+    :param pointsDF: Dataframe with points defining where to extract raster values.
+    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
+
+    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
+
+    """
+    try:
+
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        #Convert the Raster Dictionary to a Dataframe - to iterate through
+        rasterDF = pd.DataFrame.from_dict(rasterDataDic, orient='columns')
+
+        # Extract the latitude and longitude lists
+        lats = pointsDF['Latitude'].tolist()
+        lons = pointsDF['Longitude'].tolist()
+
+
+        #Iterate through the Rasters
+        for index, row in rasterDF.iterrows():
+            variableLU = row.get("Variable")
+            temporalLU = row.get("Temporal")
+            pathLU = row.get("Path")
+
+            fieldName = f'{variableLU}_{temporalLU}'
+
+            'Check that raster path exists'
+            if os.path.exists(pathLU) != True:
+                messageTime = timeFun()
+                msgScript = (f'Warning Raster Path - {pathLu} - doesnt exist - exiting script')
+                print(scriptMsg)
+                logFile = open(logFileName, "a")
+                logFile.write(scriptMsg + "\n")
+                logFile.close()
+                sys.exit()
+
+            #Open the raster file
+            raster = rasterio.open(pathLU)
+
+            # Read the raster data
+            raster_data = raster.read(1)
+
+            # Use ThreadPoolExecutor for parallel processing
+            with ThreadPoolExecutor() as executor:
+                futures = {executor.submit(get_raster_value2, lat, lon, raster, raster_data): i for i, (lat, lon) in
+                           enumerate(zip(lats, lons))}
+                results = [None] * len(futures)  # Initialize a list to store results in the correct order
+                for future in as_completed(futures):
+                    index = futures[future]
+                    results[index] = future.result()
+
+            #Export Points Back to the Dataframe
+            pointsDF[fieldName] = results
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully extracted water balance data for {fieldName} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        outPointsWBDF = pointsDF
+        return 'success function', outPointsWBDF
+
+    except:
+        print(f'Failed - extractWB')
+        exit()
+
+
+
+def extractWBRS(pointsDF, rasterDataDic):
+    """
+    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
+    dictionary - rasterDataDic (i.e. NPS water balance).  Extracting via Raterstats library
+
+
+    :param pointsDF: Dataframe with points defining where to extract raster values.
+    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
+
+    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
+
+    """
+    try:
+
+        #Convert the Raster Dictionary to a Dataframe - to iterate through
+        rasterDF = pd.DataFrame.from_dict(rasterDataDic, orient='columns')
+
+        # Convert to a list of tuples
+        points = list(zip(pointsDF['Longitude'], pointsDF['Latitude']))
+
+        #Iterate through the Rasters
+        for index, row in rasterDF.iterrows():
+            variableLU = row.get("Variable")
+            temporalLU = row.get("Temporal")
+            pathLU = row.get("Path")
+
+            fieldName = f'{variableLU}_{temporalLU}'
+
+            'Check that raster path exists'
+            if os.path.exists(pathLU) != True:
+                messageTime = timeFun()
+                msgScript = (f'Warning Raster Path - {pathLu} - doesnt exist - exiting script')
+                print(scriptMsg)
+                logFile = open(logFileName, "a")
+                logFile.write(scriptMsg + "\n")
+                logFile.close()
+                sys.exit()
+
+
+            #Extact the Raster values
+            # Perform point query
+            values = point_query(points, pathLU)
+
+            # Add the results to the DataFrame
+            pointsDF[fieldName] = values
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully extracted water balance data for {fieldName} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        outPointsWBDF = pointsDF
+        return 'success function', outPointsWBDF
+
+    except:
+        print(f'Failed - extractWBRS')
+        exit()
+
 
 # Function to extract raster value at a given point
 def get_raster_value(lat, lon, raster):
@@ -308,6 +445,20 @@ def get_raster_value(lat, lon, raster):
     except IndexError:
         value = np.nan  # Handle case where raster.index() fails
     return value
+
+
+def get_raster_value2(lat, lon, raster, raster_data):
+    try:
+        # Convert latitude and longitude to the raster's coordinate system
+        row, col = raster.index(lon, lat)
+
+        # Check if the indices are within the raster bounds
+        if (0 <= row < raster.height) and (0 <= col < raster.width):
+            return raster_data[row, col]
+        else:
+            return np.nan  # Return NaN if the point is out of bounds
+    except IndexError:
+        return np.nan  # Handle case where raster.index() fails
 
 def timeFun():
     from datetime import datetime
