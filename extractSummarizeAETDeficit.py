@@ -16,6 +16,7 @@ Output:
 
 
 Python Environment: PCM_VegClimateVA - Python 3.11
+Libraries: Geopandas, Raterio, Pandas
 
 Date Developed - May 2024
 Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Network Inventory and Monitoring
@@ -28,6 +29,10 @@ import os
 import session_info
 import traceback
 from datetime import datetime
+#Packages for GIS point extract
+import rasterio
+from rasterio.transform import from_origin
+from rasterio.enums import Resampling
 
 #Excel file with the monitoring Locations
 monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_Plot_Locations_All_wNPSWB_GCS.xlsx'
@@ -78,7 +83,7 @@ def main():
         #########################################################
         # Import and Compile the Point Tables (Monitoring Loc and GBIF)
         #########################################################
-        outFun = extractWB(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic)
+        outFun = extractWB(outPointsDF)
         if outFun[0].lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function extractWB - " + messageTime + " - Failed - Exiting Script")
@@ -112,15 +117,16 @@ def main():
 
 def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
     """
-    Function imports and compiles the 'monitoring location' and 'gbif location' tables.  Harmonizes the merge
-
+    Function imports and compiles the 'monitoring location' and 'gbif location' tables.  Appends to the two input tables
+    (i.e. monitoringLoc and gbifLoc) and applies as field subset and subsequent field rename using the pass dictionaries
+    (i.e. monitoringLocDic and gbifLocDic).
 
     :param monitoringLoc: Monitoring Locations Table.
     :param monitoringLocDic: Monitoring Locations Table field dictionary
     :param gbifLoc: GBIF Locations Tables
     :param gbifLocDic: GBIF Locations Tables field dictionary
 
-    :return: outPointsDF: data frame with the monitoring and GBIF files merged
+    :return: outPointsDF: data frame with the monitoring and GBIF files appends, with a field subset and field rename.
 
     """
     try:
@@ -205,7 +211,7 @@ def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
         outPointsDF = pd.concat(appendDFList, ignore_index=True)
 
         messageTime = timeFun()
-        scriptMsg = f'Successfully preprocessed and mergred Locations and GBIF tables - {messageTime}'
+        scriptMsg = f'Successfully preprocessed and merged Locations and GBIF tables - {messageTime}'
         print (scriptMsg)
 
         logFile = open(logFileName, "a")
@@ -217,6 +223,41 @@ def compilePointFiles(monitoringLoc, monitoringLocDic, gbifLoc, gbifLocDic):
     except:
         print(f'Failed - compilePointFiles')
         exit()
+
+
+def extractWB(outPointsDF, rasterDataDic):
+    """
+    For the point lat/lon points in the 'outPointsDF' dataframe extracts values for the defined rasters in the
+    dictionary - rasterDataDic (i.e. NPS water balance).
+
+
+    :param outPointsDF: Dataframe with points defining where to extract raster values.
+    :param rasterDataDic: Dictionary defining Raster to be processed, include Metdata and Raster Paths.
+
+    :return: outPointsWBDF: data frame with the extracted raster data for the pass points in 'outPointsDF'.
+
+    """
+    try:
+
+
+
+
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully extracted water balance data - {messageTime}'
+        print(scriptMsg)
+
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        return 'success function', outPointsDF
+
+    except:
+        print(f'Failed - compilePointFiles')
+        exit()
+
+
 
 def timeFun():
     from datetime import datetime
