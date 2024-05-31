@@ -59,13 +59,29 @@ def main():
         elif inFormat == '.csv':
             pointsDF = pd.read_csv(inPointsWB)
 
-        #Convert the Process Dictionary to a Dataframe
+        # Create the dataframe of Veg Types to iterate through
+        veg_type = processDic['VegType']
+        veg_name = processDic['VegName']
+
+        # Create a DataFrame with the Vegetation Types will be outer loop
+        vegTypesDF = pd.DataFrame({'VegType': veg_type, 'VegName': veg_name})
+
+        # Create the DataFrame with the Temporal Periods and Fields to Process
+        temporalFields = processDic['Temporal']
+        aetFields = processDic['AETFields']
+        deficitFields = processDic['DeficitFields']
+
+        # Create a DataFrame defining the temporal information AET and DEficit Fields
+        # will be the inter temporal loop - once historic, once futures
+        temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
+                                   'DeficitFields': deficitFields})
+
 
 
         #########################################################
-        # Import and Compile the Point Tables (Monitoring Loc and GBIF)
+        # Create Point Graphs by Community
         #########################################################
-        outFun = pointGraphs(pointsDF, processDic, outDir)
+        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
@@ -95,36 +111,22 @@ def main():
         exit()
 
 
-def pointGraphs(pointsDF, processDic, outDir):
+def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
 
     """
     Creates AET/Deficit scatter plots by vegetation type (e.g. Vegetation Type
 
     :param pointsDF: points dataframe to be processed
-    :param processDic: Dictionary defining the Veg Types, Names and AET and Deficit Fields
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+    is the inner loop of the nest loop.
     :param outDir: Output directory
 
-    :return: PDFs file with scatter plots of AET/Deficit per Veg Type (i.e. community) at Historica and
-    Futures time steps.
+    :return: PDFs file with scatter plots of AET/Deficit per Veg Type (i.e. community) at Historical and
+    Futures time steps. Exported to the Output Directory.
     """
     try:
-
-        # Create the dataframe of Veg Types to iterate through
-        veg_type = processDic['VegType']
-        veg_name = processDic['VegName']
-
-        # Create a DataFrame with the Vegetation Types will be outer loop
-        vegTypesDF = pd.DataFrame({'VegType': veg_type, 'VegName': veg_name})
-
-        # Create the DataFrame with the Temporal Periods and Fields to Process
-        temporalFields = processDic['Temporal']
-        aetFields = processDic['AETFields']
-        deficitFields = processDic['DeficitFields']
-
-        # Create a DataFrame defining the temporal information AET and DEficit Fields
-        # will be the inter temporal loop - once historic, once futures
-        temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
-                                   'DeficitFields': deficitFields})
 
         #Prior to graphing remove records with Negative AET or Deficit
         noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
