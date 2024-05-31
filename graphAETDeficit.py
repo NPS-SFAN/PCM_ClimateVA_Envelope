@@ -37,14 +37,14 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
-              'Temporal': ["Historic (1981-2010)", "Mid Century (2040-2059)"],
+              'Temporal': ["Historic (1981-2010)", "Mid Century (2040-2059) Ensemble GCM"],
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
 
 # Output Name, OutDir, and Workspace
 outName = 'PCM_AETDeficit'  # Output name for excel file and logile
-outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
+outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\Graphs'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
@@ -66,12 +66,12 @@ def main():
         # Import and Compile the Point Tables (Monitoring Loc and GBIF)
         #########################################################
         outFun = pointGraphs(pointsDF, processDic, outDir)
-        if outFun[0].lower() != "success function":
+        if outFun.lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
             exit()
 
-        outPointsDF = outFun[1]
+
 
 
 
@@ -116,7 +116,7 @@ def pointGraphs(pointsDF, processDic, outDir):
         # Create a DataFrame with the Vegetation Types will be outer loop
         vegTypesDF = pd.DataFrame({'VegType': veg_type, 'VegName': veg_name})
 
-        # Create the dataframe of Veg Types to iterate through
+        # Create the DataFrame with the Temporal Periods and Fields to Process
         temporalFields = processDic['Temporal']
         aetFields = processDic['AETFields']
         deficitFields = processDic['DeficitFields']
@@ -126,69 +126,90 @@ def pointGraphs(pointsDF, processDic, outDir):
         temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
                                    'DeficitFields': deficitFields})
 
+        #Prior to graphing remove records with Negative AET or Deficit
+        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
 
-        ###STOPPED Here 5/30 - PM
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
 
+            #Iterate Through the Temporal Time Steps (i.e. Historic and Futures)
+            for index2, timeRow in temporalDF.iterrows():
+                timePeriodLU = timeRow.get("TemporalFields")
+                aeFieldsLU = timeRow.get("AETFields")
+                deficitFieldsLU = timeRow.get("DeficitFields")
 
+                #Subset to only the vegetation of Interest
+                noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
 
+                #Subset to all other than 'PCM' records
+                notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
 
+                #Subset only PCM records
+                onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
-        #Remove Records with Negative AET or Deficit
-        filteredDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+                #Get Count of Records by Source
+                countNotPCMDF = notPCMDF.shape[0]
+                countOnlyPCMDF = onlyPCMDF.shape[0]
 
-        #Subset to all other than 'PCM' records
-        notPCMDF = filteredDF[filteredDF['Source'] != 'PCM']
+                #Define the Style Mappings - including other shouldn't be need though
+                size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
+                color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
 
-        #Subset only PCM records
-        onlyPCMDF = filteredDF[filteredDF['Source'] == 'PCM']
+                #Define the scatter Plot Size
+                plt.figure(figsize=(10, 6))
+                # Create the scatter plot with the GBIF (high number of points)
+                sns.scatterplot(data=notPCMDF, x=deficitFieldsLU, y=aeFieldsLU, hue='Source', size='Source',
+                                sizes=size_mapping, palette=color_mapping)
 
-        #Define the Style Mappings
-        #style_mapping = {'PCM': 'o', 'GBIF': 's', 'Other': 'X'}
-        size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
-        color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+                #Overlay the PCM Plots
+                sns.scatterplot(data=onlyPCMDF, x='Deficit_Historic', y='AET_Historic', hue='Source', size='Source',
+                                sizes=size_mapping, palette=color_mapping)
 
-        #Define the Color Palette
-        #sns.color_palette("flare", as_cmap=True)
+                plt.xlabel('Avg. Total Annual Deficit (mm)')
+                plt.ylabel('Avg. Total Annual AET (mm)')
 
-        #Define the scatter Plot Size
-        plt.figure(figsize=(10, 6))
-        # Create the scatter plot with the GBIF (high number of points)
-        sns.scatterplot(data=notPCMDF, x='Deficit_Historic', y='AET_Historic', hue='Source', size='Source',
-                        sizes=size_mapping, palette=color_mapping)
+                titleLU = f'{vegNameLU} - {timePeriodLU}'
+                plt.title(titleLU)
 
-        #Overlay the PCM Plots
-        sns.scatterplot(data=onlyPCMDF, x='Deficit_Historic', y='AET_Historic', hue='Source', size='Source',
-                        sizes=size_mapping, palette=color_mapping)
+                # Show plot
+                plt.legend(title='Source')
 
-        plt.xlabel('Avg. Total Annual AET (mm)')
-        plt.ylabel('Avg. Total Annual Deficit (mm)')
-        plt.title('Scatter Plot of AET Historic vs AET MidCentury Grouped by Source')
+                #Name for output graph
+                outPDF = f'{vegTypeLU}_{timePeriodLU}.pdf'
+                #Full Path
+                outPath = f'{outDir}\\{outPDF}'
 
-        # Show plot
-        plt.legend(title='Source')
+                #Delete File IF Exists
+                if os.path.exists(outPath):
+                    os.remove(outPath)
 
-        outPDF = "TBD"
-        outPath = f'{outDir}\\{outName}.pdf'
-        #Export Plot
-        plt.savefig('scatter_plot.pdf', format='pdf')
+                #Export Plot
+                plt.savefig(outPath, format='pdf')
 
-        #Close Plot
-        plt.close()
+                #Close Plot
+                plt.close()
 
+                messageTime = timeFun()
+                scriptMsg = f'Successfully created graphed - {vegTypeLU} - {timePeriodLU} - see - {outPath} - {messageTime}'
+                print(scriptMsg)
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully preprocessed and merged Locations and GBIF tables - {messageTime}'
-        print(scriptMsg)
+                logFile = open(logFileName, "a")
+                logFile.write(scriptMsg + "\n")
+                logFile.close()
 
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
-
-        return 'success function', outPointsDF
+        return 'success function'
 
     except:
         print(f'Failed - pointsGraphs')
         exit()
+
+def timeFun():
+    from datetime import datetime
+    b = datetime.now()
+    messageTime = b.isoformat()
+    return messageTime
 
 
 if __name__ == '__main__':
