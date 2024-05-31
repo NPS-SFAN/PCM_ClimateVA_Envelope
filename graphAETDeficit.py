@@ -181,11 +181,16 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
                 #Name for output graph
                 outPDF = f'{vegTypeLU}_{timePeriodLU}.pdf'
                 #Full Path
-                outPath = f'{outDir}\\{outPDF}'
+                outPath = f'{outDir}\\points\\{outPDF}'
 
                 #Delete File IF Exists
                 if os.path.exists(outPath):
                     os.remove(outPath)
+                #Make points file if needed
+                if os.path.exists(f'{outDir}\\points'):
+                    pass
+                else:
+                    os.makedirs(f'{outDir}\\points')
 
                 #Export Plot
                 plt.savefig(outPath, format='pdf')
