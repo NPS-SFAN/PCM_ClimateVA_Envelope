@@ -78,16 +78,23 @@ def main():
 
 
 
+        # #########################################################
+        # # Create Point Graphs by Community
+        # #########################################################
+        # outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        # if outFun.lower() != "success function":
+        #     messageTime = timeFun()
+        #     print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+        #     exit()
+
         #########################################################
-        # Create Point Graphs by Community
+        # Create Vector Graphs by Community - TO BE DEVELOPED - 5/31/2024
         #########################################################
-        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
             messageTime = timeFun()
-            print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+            print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
             exit()
-
-
 
 
 
@@ -119,7 +126,6 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
     :param pointsDF: points dataframe to be processed
     :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
     :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
-    is the inner loop of the nest loop.
     is the inner loop of the nest loop.
     :param outDir: Output directory
 
@@ -211,6 +217,124 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
     except:
         print(f'Failed - pointsGraphs')
         exit()
+
+
+def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
+    """
+    Creates AET/Deficit scatter plots Vector Graphs ( change from Historic to Current) by vegetation type
+    (e.g. Vegetation Type)
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+
+    :param outDir: Output directory
+
+    :return: PDFs file with scatter plots with vectors of AET/Deficit change (e.g. Historic to MidCentury) per Veg Type
+     (i.e. community). Exported to the Output Directory.
+    """
+    try:
+
+        #Reset the Index making as a field, will be used in the vector graphing as a unique index allowing for
+        #Calculation of change across points
+        pointsDF.reset_index(inplace=True)
+
+        #Prior to graphing remove records with Negative AET or Deficit
+        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
+
+            #Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+            # 2-Future
+
+            #Get First row from temporal dataframe, will be the Historic fields
+            seriesHist = temporalDF.iloc[0]
+            timePeriodHist = seriesHist.get("TemporalFields")
+            aeFieldsHist = seriesHist.get("AETFields")
+            deficitFieldsHist = seriesHist.get("DeficitFields")
+
+            # Get Second row from temporal dataframe, will be the Future fields
+            seriesFut = temporalDF.iloc[1]
+            timePeriodFut = seriesFut.get("TemporalFields")
+            aeFieldsFut = seriesFut.get("AETFields")
+            deficitFieldsFut = seriesFut.get("DeficitFields")
+
+            #Subset to only the vegetation of Interest
+            noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
+
+            #Subset to all other than 'PCM' records
+            notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
+
+            #Subset only PCM records
+            onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
+
+            #Get Count of Records by Source
+            countNotPCMDF = notPCMDF.shape[0]
+            countOnlyPCMDF = onlyPCMDF.shape[0]
+
+            #Define the Style Mappings - including other shouldn't be need though
+            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
+            color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+
+            #Define the scatter Plot Size
+            plt.figure(figsize=(10, 6))
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsLU, y=aeFieldsLU, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            #Overlay the PCM Plots
+            sns.scatterplot(data=onlyPCMDF, x='Deficit_Historic', y='AET_Historic', hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            plt.xlabel('Avg. Total Annual Deficit (mm)')
+            plt.ylabel('Avg. Total Annual AET (mm)')
+
+            titleLU = f'{vegNameLU} - {timePeriodLU}'
+            plt.title(titleLU)
+
+            # Show plot
+            plt.legend(title='Source')
+
+            #Name for output graph
+            outPDF = f'{vegTypeLU}_{timePeriodLU}.pdf'
+            #Full Path
+            outPath = f'{outDir}\\points\\{outPDF}'
+
+            #Delete File IF Exists
+            if os.path.exists(outPath):
+                os.remove(outPath)
+            #Make points file if needed
+            if os.path.exists(f'{outDir}\\points'):
+                pass
+            else:
+                os.makedirs(f'{outDir}\\points')
+
+            #Export Plot
+            plt.savefig(outPath, format='pdf')
+
+            #Close Plot
+            plt.close()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully created graphed - {vegTypeLU} - {timePeriodLU} - see - {outPath} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function'
+
+    except:
+        print(f'Failed - pointsGraphs')
+        exit()
+
+
+
 
 def timeFun():
     from datetime import datetime
