@@ -203,7 +203,7 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
                 plt.title(titleLU)
 
                 # Show plot
-                plt.legend(title='Source')
+                plt.legend()
 
                 #Name for output graph
                 outPDF = f'{vegTypeLU}_{timePeriodLU}.pdf'
@@ -482,7 +482,7 @@ def vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir):
         plt.title(titleLU)
 
         # Show plot
-        plt.legend(title='Source')
+        plt.legend()
 
         #Name for output graph
         outPDF = f'All_PCM_Communities_{timePeriodHist}_{timePeriodFut}.pdf'
