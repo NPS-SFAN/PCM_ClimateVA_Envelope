@@ -77,7 +77,6 @@ def main():
                                    'DeficitFields': deficitFields})
 
 
-
         # #########################################################
         # # Create Point Graphs by Community
         # #########################################################
@@ -88,7 +87,7 @@ def main():
         #     exit()
 
         #########################################################
-        # Create Vector Graphs by Community - TO BE DEVELOPED - 5/31/2024
+        # Create Vector Graphs by Community
         #########################################################
         outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
@@ -96,10 +95,7 @@ def main():
             print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
             exit()
 
-
-
-
-
+        messageTime = timeFun()
         scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
         print(scriptMsg)
         logFile.write(scriptMsg + "\n")
