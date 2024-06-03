@@ -37,7 +37,7 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
-              'Temporal': ["Historic (1981-2010)", "Mid Century (2040-2059) Ensemble GCM"],
+              'Temporal': ["1981-2010", "2040-2059 Ensemble GCM"],
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
@@ -273,16 +273,14 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
             onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
             # #Define the Style Mappings - including other shouldn't be need though
-            # size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
-            # color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+            size_mapping = {'PCM': 50, 'GBIF': 5, 'Other': 10}
+            color_mapping = {'PCM': '#000000', 'GBIF': '#d3d3d3', 'Other': '#2ca02c'}
 
             #Define the scatter Plot Size
             plt.figure(figsize=(10, 6))
             # Create the scatter plot with the GBIF (high number of points)
-            # sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-            #                 sizes=size_mapping, palette=color_mapping)
-            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source')
-
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
 
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(notPCMDF)):
@@ -290,7 +288,7 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
                 plt.plot(
                     [notPCMDF[deficitFieldsHist].values[i], notPCMDF[deficitFieldsFut].values[i]],
                     [notPCMDF[aetFieldsHist].values[i], notPCMDF[aetFieldsFut].values[i]],
-                    color = 'grey',
+                    color='#d3d3d3',
                     lw=0.5
                 )
 
@@ -299,24 +297,23 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
                     '',
                     xy=(notPCMDF[deficitFieldsFut].values[i], notPCMDF[aetFieldsFut].values[i]),
                     xytext=(notPCMDF[deficitFieldsHist].values[i], notPCMDF[aetFieldsHist].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='grey', lw=0.5)
+                    arrowprops=dict(arrowstyle="->", color='#d3d3d3', lw=0.5)
                 )
 
             #######################
             #Overlay the PCM Plots
 
             # Create the scatter plot PCM only plots
-            # sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-            #                 sizes=size_mapping, palette=color_mapping)
-            sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source')
+            sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
 
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(onlyPCMDF)):
                 plt.plot(
                     [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
                     [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
-                    color='blue',
-                    lw=2
+                    color='#000000',
+                    lw=1
                 )
 
                 # Add arrow
@@ -324,32 +321,38 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
                     '',
                     xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
                     xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='blue',lw=2)
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
                 )
+
+            # Add 1:1 dashed line
+            #Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
+            max_val = notPCMDF[columns_to_include].max().max()
+            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
 
 
             plt.xlabel('Avg. Total Annual Deficit (mm)')
             plt.ylabel('Avg. Total Annual AET (mm)')
 
-            titleLU = f'{vegNameLU} - {timePeriodLU}'
+            titleLU = f'{vegNameLU} - Change from {timePeriodHist} to {timePeriodFut}'
             plt.title(titleLU)
 
             # Show plot
             plt.legend(title='Source')
 
             #Name for output graph
-            outPDF = f'{vegTypeLU}_{timePeriodLU}.pdf'
+            outPDF = f'{vegNameLU}_{timePeriodHist}_{timePeriodFut}.pdf'
             #Full Path
-            outPath = f'{outDir}\\points\\{outPDF}'
+            outPath = f'{outDir}\\vector\\{outPDF}'
 
             #Delete File IF Exists
             if os.path.exists(outPath):
                 os.remove(outPath)
             #Make points file if needed
-            if os.path.exists(f'{outDir}\\points'):
+            if os.path.exists(f'{outDir}\\vector'):
                 pass
             else:
-                os.makedirs(f'{outDir}\\points')
+                os.makedirs(f'{outDir}\\vector')
 
             #Export Plot
             plt.savefig(outPath, format='pdf')
@@ -358,7 +361,7 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
             plt.close()
 
             messageTime = timeFun()
-            scriptMsg = f'Successfully created graphed - {vegTypeLU} - {timePeriodLU} - see - {outPath} - {messageTime}'
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} - see - {outPath} - {messageTime}'
             print(scriptMsg)
 
             logFile = open(logFileName, "a")
@@ -370,8 +373,6 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
     except:
         print(f'Failed - pointsGraphs')
         exit()
-
-
 
 
 def timeFun():
