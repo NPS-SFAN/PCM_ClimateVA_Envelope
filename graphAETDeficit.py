@@ -254,13 +254,13 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
             #Get First row from temporal dataframe, will be the Historic fields
             seriesHist = temporalDF.iloc[0]
             timePeriodHist = seriesHist.get("TemporalFields")
-            aeFieldsHist = seriesHist.get("AETFields")
+            aetFieldsHist = seriesHist.get("AETFields")
             deficitFieldsHist = seriesHist.get("DeficitFields")
 
             # Get Second row from temporal dataframe, will be the Future fields
             seriesFut = temporalDF.iloc[1]
             timePeriodFut = seriesFut.get("TemporalFields")
-            aeFieldsFut = seriesFut.get("AETFields")
+            aetFieldsFut = seriesFut.get("AETFields")
             deficitFieldsFut = seriesFut.get("DeficitFields")
 
             #Subset to only the vegetation of Interest
@@ -272,23 +272,61 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
             #Subset only PCM records
             onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
-            #Get Count of Records by Source
-            countNotPCMDF = notPCMDF.shape[0]
-            countOnlyPCMDF = onlyPCMDF.shape[0]
-
-            #Define the Style Mappings - including other shouldn't be need though
-            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
-            color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+            # #Define the Style Mappings - including other shouldn't be need though
+            # size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
+            # color_mapping = {'PCM': '#1f77b4', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
 
             #Define the scatter Plot Size
             plt.figure(figsize=(10, 6))
             # Create the scatter plot with the GBIF (high number of points)
-            sns.scatterplot(data=notPCMDF, x=deficitFieldsLU, y=aeFieldsLU, hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+            # sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+            #                 sizes=size_mapping, palette=color_mapping)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source')
 
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(notPCMDF)):
+
+                plt.plot(
+                    [notPCMDF[deficitFieldsHist].values[i], notPCMDF[deficitFieldsFut].values[i]],
+                    [notPCMDF[aetFieldsHist].values[i], notPCMDF[aetFieldsFut].values[i]],
+                    color = 'grey',
+                    lw=0.5
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(notPCMDF[deficitFieldsFut].values[i], notPCMDF[aetFieldsFut].values[i]),
+                    xytext=(notPCMDF[deficitFieldsHist].values[i], notPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='grey', lw=0.5)
+                )
+
+            #######################
             #Overlay the PCM Plots
-            sns.scatterplot(data=onlyPCMDF, x='Deficit_Historic', y='AET_Historic', hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+
+            # Create the scatter plot PCM only plots
+            # sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+            #                 sizes=size_mapping, palette=color_mapping)
+            sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source')
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                plt.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
+                    color='blue',
+                    lw=2
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='blue',lw=2)
+                )
+
 
             plt.xlabel('Avg. Total Annual Deficit (mm)')
             plt.ylabel('Avg. Total Annual AET (mm)')
