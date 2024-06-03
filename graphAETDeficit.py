@@ -77,17 +77,24 @@ def main():
                                    'DeficitFields': deficitFields})
 
 
+        #########################################################
+        # Create Point Graphs by Community
         # #########################################################
-        # # Create Point Graphs by Community
-        # #########################################################
-        # outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        # if outFun.lower() != "success function":
-        #     messageTime = timeFun()
-        #     print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
-        #     exit()
+        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
 
         #########################################################
-        # Create Vector Graphs by Community
+        # Create Vector Graphs by Community Historic to Futures
         #########################################################
         outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
@@ -98,8 +105,26 @@ def main():
         messageTime = timeFun()
         scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
         print(scriptMsg)
+        logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
         logFile.close()
+
+        #########################################################
+        # Create Vector Graph Across All Communities
+        #########################################################
+        outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - vectorAllCommunities.py - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
 
     except:
         messageTime = timeFun()
@@ -367,9 +392,131 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
         return 'success function'
 
     except:
+        print(f'Failed - vertorGraphs')
+        exit()
+def vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir):
+    """
+    Creates AET/Deficit scatter plots Vector Graphs ( change from Historic to Current) for all PCM vegetation.
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.
+
+    :param outDir: Output directory
+
+    :return: PDFs file with one graph  vectors of AET/Deficit change (e.g. Historic to MidCentury) across all PCM
+    (i.e. community). Exported to the Output Directory.
+    """
+    try:
+
+        #Reset the Index making as a field, will be used in the vector graphing as a unique index allowing for
+        #Calculation of change across points
+        pointsDF.reset_index(inplace=True)
+
+        #Prior to graphing remove records with Negative AET or Deficit
+        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+
+        # Subset only PCM records
+        onlyPCMDF = noZeroDF[noZeroDF['Source'] == 'PCM']
+
+        #Join the vegTypesDF data frame to get the Vegetation Name
+        onlyPCMDFwVegName = pd.merge(onlyPCMDF, vegTypesDF, on='VegType', how='inner')
+
+
+        #Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+        # 2-Future
+        #Get First row from temporal dataframe, will be the Historic fields
+        seriesHist = temporalDF.iloc[0]
+        timePeriodHist = seriesHist.get("TemporalFields")
+        aetFieldsHist = seriesHist.get("AETFields")
+        deficitFieldsHist = seriesHist.get("DeficitFields")
+
+        # Get Second row from temporal dataframe, will be the Future fields
+        seriesFut = temporalDF.iloc[1]
+        timePeriodFut = seriesFut.get("TemporalFields")
+        aetFieldsFut = seriesFut.get("AETFields")
+        deficitFieldsFut = seriesFut.get("DeficitFields")
+
+        #Define the Style Mappings - including other shouldn't be need though
+        size_mapping = {'California Annual Grassland': 25, 'Blue Oak Woodland': 25, 'Bald Hills Prairie': 25,
+                        'Coast Live Oak Woodlands': 25, 'Blue Oak Woodland': 25, 'Douglas Fir Forest': 25,
+                        'Coastal Dune Scrub': 25, 'Freshwater Wetlands': 25, 'Redwood Forest': 25,
+                        'Coastal Salt Marsh': 25, 'Northern Coastal Scrub': 25, 'Southern Coastal Scrub': 25
+                        }
+
+        #Define the scatter Plot Size
+        plt.figure(figsize=(10, 6))
+
+        # Create the scatter plot
+        palette = sns.color_palette('Paired', onlyPCMDFwVegName['VegName'].nunique())
+        sns.scatterplot(data=onlyPCMDFwVegName, x=deficitFieldsHist, y=aetFieldsHist, hue='VegName', sizes=size_mapping, palette=palette)
+
+        # Create a dictionary to map VegType to its color get the palellet/color per vegetation community
+        unique_veg_types = onlyPCMDFwVegName['VegName'].unique()
+        color_map = {veg_type: palette[i] for i, veg_type in enumerate(unique_veg_types)}
+
+        # Draw vectors - iterate through the dataframe sequentially
+        for i in range(len(onlyPCMDFwVegName)):
+            #Lookup the VegName value and apply the color ramp with for the Veg Community
+            veg_type = onlyPCMDFwVegName['VegName'].values[i]
+
+            plt.plot(
+                [onlyPCMDFwVegName[deficitFieldsHist].values[i], onlyPCMDFwVegName[deficitFieldsFut].values[i]],
+                [onlyPCMDFwVegName[aetFieldsHist].values[i], onlyPCMDFwVegName[aetFieldsFut].values[i]],
+                color=color_map[veg_type],
+                lw=1
+            )
+
+            # Add arrow
+            plt.annotate(
+                '',
+                xy=(onlyPCMDFwVegName[deficitFieldsFut].values[i], onlyPCMDFwVegName[aetFieldsFut].values[i]),
+                xytext=(onlyPCMDFwVegName[deficitFieldsHist].values[i], onlyPCMDFwVegName[aetFieldsHist].values[i]),
+                arrowprops=dict(arrowstyle="->", color=color_map[veg_type], lw=1.0)
+            )
+
+        plt.xlabel('Avg. Total Annual Deficit (mm)')
+        plt.ylabel('Avg. Total Annual AET (mm)')
+
+        titleLU = f'AET and Deficit Change from {timePeriodHist} to {timePeriodFut}'
+        plt.title(titleLU)
+
+        # Show plot
+        plt.legend(title='Source')
+
+        #Name for output graph
+        outPDF = f'All_PCM_Communities_{timePeriodHist}_{timePeriodFut}.pdf'
+        #Full Path
+        outPath = f'{outDir}\\vector\\{outPDF}'
+
+        #Delete File IF Exists
+        if os.path.exists(outPath):
+            os.remove(outPath)
+        #Make points file if needed
+        if os.path.exists(f'{outDir}\\vector'):
+            pass
+        else:
+            os.makedirs(f'{outDir}\\vector')
+
+        #Export Plot
+        plt.savefig(outPath, format='pdf')
+
+        #Close Plot
+        plt.close()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully created All PCM Communities Graph - see - {outPath} - {messageTime}'
+        print(scriptMsg)
+
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        return 'success function'
+
+    except:
         print(f'Failed - pointsGraphs')
         exit()
-
 
 def timeFun():
     from datetime import datetime
