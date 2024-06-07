@@ -43,15 +43,15 @@ from pygbif import species
 from pygbif import occurrences as occ
 
 #File (Excel/CSV) with vegtation taxon to be idenfities
-inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\NAWMACover\PCM_NAWMA_Vegetation_ClimateVA_20240517.xlsx'
+inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\ReferenceTaxon\PCM_ReferenceTaxon_20240604.xlsx'
 #Worksheet to process if the inTable is an excel file
-inWorksheet = 'NAWMACoverCommunityTopTwo'
+inWorksheet = 'ReferenceTaxon'
 #Field in the Vegetation worksheet that defined the scientific name
 lookupField = 'Species'
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_NAWMA_TopTwo_GBIF'  # Output name for excel file and logile
-outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF'  # Directory Output Location
+outName = 'PCM_Reference_GBIF_Test'  # Output name for excel file and logile
+outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\ReferenceTaxon'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
@@ -60,7 +60,7 @@ logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .tx
 #Number of records to download per GBIF Occurrence Call on occurrence.search
 chunkSize = 300
 #Total Number of GBIF records to download per
-totalRecords = 10000
+totalRecords = 10200
 #List of fiels to retain from the GBIF Occurrence Pulls
 fieldsToRetain = ['key', 'taxonKey', 'scientificName', 'basisOfRecord', 'taxonomicStatus', 'year', 'eventDate',
                   'decimalLatitude', 'decimalLongitude', 'continent', 'stateProvince', 'country', 'datasetName',
@@ -108,7 +108,7 @@ def main():
         outDFOccurrenceList = outFun[1]
 
         ####################
-        #Export Taxonomy and Occurrence Dataframes.  Occurrence dataframe will be subset as well
+        #Export Occurrence Dataframes.  Occurrence dataframe will be subset as well
         #Option to remove fields
         outPathName = f'{outDir}\\{outName}_Occurrences_{dateNow}.csv'
 
@@ -168,7 +168,7 @@ def processOccurrence(inDF, chunkSize, totalRecords, fieldToRetain):
                 exit()
             #
             outGBIFOccurrence = outFun[1]
-            #Add the Taxon Occudrrence Dataframe to the list to be compiled across all taxon
+            #Add the Occurrence Dataframe to the list to be compiled across all taxon
             outDFOccurrenceList.append(outGBIFOccurrence)
             messageTime = timeFun()
             scriptMsg = f'Successfully ProcessOccurrence Data for - {GBIFKeyLU} - for Taxon - {taxonLU }- {messageTime}'
@@ -180,7 +180,19 @@ def processOccurrence(inDF, chunkSize, totalRecords, fieldToRetain):
         #Concate All dataframes in list to one occurrence dataframe
         DFOccurrences = pd.concat(outDFOccurrenceList, ignore_index=True)
 
-        return 'success function', DFOccurrences
+        #Subset to the CONUS Bounding Box, the GBIF Occurences API isn't honoring the bounding box extent
+        # criteria.  Using the CONUS bounding box which is the extent of the NPS WB data
+        # Define the bounding box
+        min_lat, max_lat = 26.0, 49.0
+        min_lon, max_lon = -125.0, -66.0
+
+        # Filter out records to only the CONUS bounding box
+        DFOccurrencesLatLon = DFOccurrences[((DFOccurrences['decimalLatitude'] >= min_lat)
+                                        & (DFOccurrences['decimalLatitude'] <= max_lat) &
+                           (DFOccurrences['decimalLongitude'] >= min_lon) &
+                                              (DFOccurrences['decimalLongitude'] <= max_lon))]
+
+        return 'success function', DFOccurrencesLatLon
 
     except:
         print(f'Failed - processOccurrence')
@@ -243,6 +255,10 @@ def getOccurrence(GBIFKey, taxonLU, chunkSize, totalRecords, fieldsToRetain, Veg
 
         #Add 'VegCode' field
         outGBIFOccurrence.insert(3, 'scientificNameLookup', taxonLU)
+
+
+
+
 
         return 'success function', outGBIFOccurrence
     except:
