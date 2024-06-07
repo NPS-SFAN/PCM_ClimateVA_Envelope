@@ -50,7 +50,7 @@ inWorksheet = 'ReferenceTaxon'
 lookupField = 'Species'
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_Reference_GBIF_Test'  # Output name for excel file and logile
+outName = 'PCM_Reference_GBIF'  # Output name for excel file and logile
 outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\ReferenceTaxon'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
