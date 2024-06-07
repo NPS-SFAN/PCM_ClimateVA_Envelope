@@ -256,10 +256,6 @@ def getOccurrence(GBIFKey, taxonLU, chunkSize, totalRecords, fieldsToRetain, Veg
         #Add 'VegCode' field
         outGBIFOccurrence.insert(3, 'scientificNameLookup', taxonLU)
 
-
-
-
-
         return 'success function', outGBIFOccurrence
     except:
         print(f'Failed - getOccurrence')
