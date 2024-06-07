@@ -28,23 +28,27 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 #Excel file with the monitoring Locations
-inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\PCM_AETDeficit_20240530.csv'
+inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240607.csv'
 
 #Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
-processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
-                          "SSCR"],
-              'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
-                          "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
-                          "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
-                          "Northern Coastal Scrub", "Southern Coastal Scrub"],
+# processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
+#                           "SSCR"],
+#               'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
+#                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
+#                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
+#                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
+#               'Temporal': ["1981-2010", "2040-2059 Ensemble GCM"],
+#               'AETFields': ["AET_Historic", "AET_MidCentury"],
+#               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
+processDic = {'VegType': ["DEPR"],
+              'VegName': ["Douglas Fir Forest"],
               'Temporal': ["1981-2010", "2040-2059 Ensemble GCM"],
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
-
 # Output Name, OutDir, and Workspace
 outName = 'PCM_AETDeficit'  # Output name for excel file and logile
-outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\Graphs'  # Directory Output Location
+outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\Graphs'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
@@ -76,10 +80,9 @@ def main():
         temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
                                    'DeficitFields': deficitFields})
 
-
-        #########################################################
+        ########################################################
         # Create Point Graphs by Community
-        # #########################################################
+        #########################################################
         outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
             messageTime = timeFun()
