@@ -3,19 +3,25 @@ graphAETDeficitPCM.py
 
 For extracted AET, and Deficit data creates summary graphs
 By Vegetation Type (Iterate):
-1) Graphs AET/Deficit Points: Historic, Futures, and Historic and Futures
-2) Graphs AET/Deficit vectors: Historic, Futures, and Historic and Futures
+1) Graphs AET/Deficit Points: Historic, Futures, and Historic and Futures, by PCM community. Outfolder: 'points'
+2) Graphs AET/Deficit Vectors change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM and GBIF
+by PCM community. Out Folder 'vector'
+3) Graphs of Vector change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM only all
+communities on one graph. Out Folder 'vector'
+4) Graphs AET/Deficit Vectors change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM only,
+with GBIF Historic Points plots, by PCM Community. Out Folder 'VectorPCM_GBIFHistoricPts'
 
 Input:
-   Point file with extracted Monitoring Locations and Water Balance Data
+   Point file with extracted Monitoring Locations and other points of interest (e.g. GBIF occurrences) with
+   NPS Water Balance Data extracted
 Output:
-    1) PDF Figures of AET by Deficit
+    1) See description above.
 
 
 Python Environment: PCM_VegClimateVA - Python 3.11
 Libraries:
 
-Date Developed - May 2024
+Date Developed - June 2024
 Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Network Inventory and Monitoring
 """
 
@@ -37,7 +43,7 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
-              'Temporal': ["1981-2010", "2040-2059 Ensemble GCM"],
+              'Temporal': ["1981-2010", "2040-2069 Ensemble GCM"],
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
@@ -139,8 +145,6 @@ def main():
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
         logFile.close()
-
-
 
 
     except:
