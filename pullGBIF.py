@@ -1,12 +1,12 @@
 """
 pullGBIF.py
-Script will pull species occurences data from the GBIF https://www.gbif.org/ repository via the GBIF API and the
+Script pull species occurrence data from the GBIF https://www.gbif.org/ repository via the GBIF API and the
 pygbif client - https://www.gbif.org/tool/OlyoYyRbKCSCkMKIi4oIT/pygbif-gbif-python-client
 
 First lookup the GBIF Taxon Code via the 'Species' code in the species API module
  - https://pygbif.readthedocs.io/en/latest/modules/species.html
 
-Second pull the Taxon Occurrences with spatial locations (Lat/Lon) in the occurrernce API module
+Second pull the Taxon Occurrences with spatial locations (Lat/Lon) in the occurrence API module
 - https://pygbif.readthedocs.io/en/latest/modules/occurrence.html
 
 Export identified Taxon in GBIF database to a .csv file
