@@ -44,10 +44,10 @@ monitoringLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAs
 monitoringLocDic = {'Source': 'PCM', 'IDField': 'Name', 'Latitude': 'Latitude', 'Longitude': 'Longitude', 'VegType': 'SiteType'}
 
 #Excel file with the GBIF Locations
-gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\PCM_NAWMA_TopTwo_GBIF_Occurrences_20240521.csv'
+gbifLoc = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\GBIF\ReferenceTaxon\PCM_Reference_GBIF_Occurrences_20240607.csv'
 #Monitoring Locations Dictionary with IDField, Latitude, Longitude and Vegation Type field definitions.
 gbifLocDic = {'Source': 'GBIF', 'IDField': 'key', 'Latitude': 'decimalLatitude', 'Longitude': 'decimalLongitude',
-              'VegType': 'VegCode'}
+              'VegType': 'VegCode', 'Taxon': 'scientificNameLookup'}
 
 #List or Dictionary of WB Rasters to process
 rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
@@ -60,8 +60,8 @@ rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
 
 
 # Output Name, OutDir, and Workspace
-outName = 'PCM_AETDeficit'  # Output name for excel file and logile
-outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit'  # Directory Output Location
+outName = 'PCM_AETDeficit_Reference'  # Output name for excel file and logile
+outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon'  # Directory Output Location
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
