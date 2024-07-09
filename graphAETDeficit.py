@@ -32,9 +32,10 @@ import traceback
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
+import dclab
 
-#Excel file with the monitoring Locations
-inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240607.csv'
+#Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
+inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240709.csv'
 
 #Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
 processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
@@ -82,58 +83,74 @@ def main():
         temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
                                    'DeficitFields': deficitFields})
 
-        ########################################################
-        # Create Point Graphs by Community
-        #########################################################
-        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        # ########################################################
+        # # Create Point Graphs by Community
+        # #########################################################
+        # outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        # if outFun.lower() != "success function":
+        #     messageTime = timeFun()
+        #     print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+        #     exit()
+        #
+        # messageTime = timeFun()
+        # scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
+        # print(scriptMsg)
+        # logFile = open(logFileName, "a")
+        # logFile.write(scriptMsg + "\n")
+        # logFile.close()
+        #
+        # #########################################################
+        # # Create Vector Graphs by Community Historic to Futures
+        # #########################################################
+        # outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        # if outFun.lower() != "success function":
+        #     messageTime = timeFun()
+        #     print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
+        #     exit()
+        #
+        # messageTime = timeFun()
+        # scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
+        # print(scriptMsg)
+        # logFile = open(logFileName, "a")
+        # logFile.write(scriptMsg + "\n")
+        # logFile.close()
+        #
+        # #########################################################
+        # # Create Vector Graph Across All Communities
+        # #########################################################
+        # outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
+        # if outFun.lower() != "success function":
+        #     messageTime = timeFun()
+        #     print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
+        #     exit()
+        #
+        # messageTime = timeFun()
+        # scriptMsg = f'Successfully completed - vectorAllCommunities.py - {messageTime}'
+        # print(scriptMsg)
+        # logFile = open(logFileName, "a")
+        # logFile.write(scriptMsg + "\n")
+        # logFile.close()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+        # #########################################################
+        # # Create Vector Graphs PCM, Points GBIF Historic
+        # #########################################################
+        # outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
+        # if outFun.lower() != "success function":
+        #     messageTime = timeFun()
+        #     print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
+        #     exit()
+        #
+        # messageTime = timeFun()
+        # scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist.py - {messageTime}'
+        # print(scriptMsg)
+        # logFile = open(logFileName, "a")
+        # logFile.write(scriptMsg + "\n")
+        # logFile.close()
 
         #########################################################
-        # Create Vector Graphs by Community Historic to Futures
+        # Create Vector Graphs PCM, Points GBIF Historic w Taxon
         #########################################################
-        outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
-            exit()
-
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
-
-        #########################################################
-        # Create Vector Graph Across All Communities
-        #########################################################
-        outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
-            exit()
-
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorAllCommunities.py - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
-
-        #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic
-        #########################################################
-        outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
+        outFun = vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
@@ -145,6 +162,23 @@ def main():
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
         logFile.close()
+
+        #########################################################
+        # Create Vector Graphs PCM, Points GBIF Historic with Percentile Contours - STILL IN DEVELOPMENT
+        #########################################################
+        outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc.py - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
 
 
     except:
@@ -179,7 +213,7 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
         #Prior to graphing remove records with Negative AET or Deficit
         noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
 
-        # Iterate through the VegTypes
+        #Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
             vegTypeLU = vegRow.get("VegType")
             vegNameLU = vegRow.get("VegName")
@@ -533,20 +567,297 @@ def vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir):
         return 'success function'
 
     except:
-        print(f'Failed - pointsGraphs')
+        print(f'Failed - vectorAllCommunities')
         exit()
 
 def vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir):
 
     """
     Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
-    plots and graphs points for GBIF historic data.  Goal is to show the chagne in PCM plots relative to the historic
-    realized climatic space for the community.
+    plots and graphs points for GBIF historic data.
 
     :param pointsDF: points dataframe to be processed
     :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
     :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
     is the inner loop of the nest loop.
+    :param outDir: Output directory
+
+    :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
+     GBIF points being graphed. Exported to the 'VectorPCM_GBIFHistoricPts' directory.
+    """
+    try:
+
+        #Prior to graphing remove records with Negative AET or Deficit
+        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
+
+            # Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+            # 2-Future
+
+            # Get First row from temporal dataframe, will be the Historic fields
+            seriesHist = temporalDF.iloc[0]
+            timePeriodHist = seriesHist.get("TemporalFields")
+            aetFieldsHist = seriesHist.get("AETFields")
+            deficitFieldsHist = seriesHist.get("DeficitFields")
+
+            # Get Second row from temporal dataframe, will be the Future fields
+            seriesFut = temporalDF.iloc[1]
+            timePeriodFut = seriesFut.get("TemporalFields")
+            aetFieldsFut = seriesFut.get("AETFields")
+            deficitFieldsFut = seriesFut.get("DeficitFields")
+
+            # Subset to only the vegetation of Interest
+            noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
+
+            # Subset to all other than 'PCM' records
+            notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
+
+            # Subset only PCM records
+            onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
+
+            # #Define the Style Mappings - including other shouldn't be need though
+            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
+            color_mapping = {'PCM': '#000000', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+
+            # Define the scatter Plot Size
+            plt.figure(figsize=(10, 6))
+
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            #######################
+            # Overlay the PCM Plots
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            new_labels = ['GBIF Historic (1981-2010)', 'PCM Plots']
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                plt.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
+                    color='#000000',
+                    lw=1
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
+            max_val = notPCMDF[columns_to_include].max().max()
+            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+
+            plt.xlabel('Avg. Total Annual Deficit (mm)')
+            plt.ylabel('Avg. Total Annual AET (mm)')
+
+            titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to {timePeriodFut}'
+            plt.title(titleLU)
+
+            # Name for output graph
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_GBIF_Historic.pdf'
+
+            #OutFolder
+            outFolder = 'VectorPCM_GBIFHistoricPts'
+
+            # Full Path
+            outPath = f'{outDir}\\{outFolder}\\{outPDF}'
+
+            # Delete File IF Exists
+            if os.path.exists(outPath):
+                os.remove(outPath)
+            # Make points file if needed
+            if os.path.exists(f'{outDir}\\{outFolder}'):
+                pass
+            else:
+                os.makedirs(f'{outDir}\\{outFolder}')
+
+            # Export Plot
+            plt.savefig(outPath, format='pdf')
+
+            # Close Plot
+            plt.close()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic - see - {outPath} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function'
+
+    except:
+        print(f'Failed - vectorPCMPointsGBIFHist')
+        exit()
+def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
+
+    """
+    Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+    plots and graphs points for GBIF historic data.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+    :param outDir: Output directory
+
+    :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
+     GBIF points being graphed. Exported to the 'VectorPCM_GBIFHistoricPts' directory.
+    """
+    try:
+
+        #Prior to graphing remove records with Negative AET or Deficit
+        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
+
+            # Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+            # 2-Future
+
+            # Get First row from temporal dataframe, will be the Historic fields
+            seriesHist = temporalDF.iloc[0]
+            timePeriodHist = seriesHist.get("TemporalFields")
+            aetFieldsHist = seriesHist.get("AETFields")
+            deficitFieldsHist = seriesHist.get("DeficitFields")
+
+            # Get Second row from temporal dataframe, will be the Future fields
+            seriesFut = temporalDF.iloc[1]
+            timePeriodFut = seriesFut.get("TemporalFields")
+            aetFieldsFut = seriesFut.get("AETFields")
+            deficitFieldsFut = seriesFut.get("DeficitFields")
+
+            # Subset to only the vegetation of Interest
+            noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
+
+            # Subset to all other than 'PCM' records
+            notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
+
+            # Subset only PCM records
+            onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
+
+            # #Define the Style Mappings - including other shouldn't be need though
+            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
+            color_mapping = {'PCM': '#000000', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
+
+            # Define the scatter Plot Size
+            plt.figure(figsize=(10, 6))
+
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            #######################
+            # Overlay the PCM Plots
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            new_labels = ['GBIF Historic (1981-2010)', 'PCM Plots']
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                plt.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
+                    color='#000000',
+                    lw=1
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
+            max_val = notPCMDF[columns_to_include].max().max()
+            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+
+            plt.xlabel('Avg. Total Annual Deficit (mm)')
+            plt.ylabel('Avg. Total Annual AET (mm)')
+
+            titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to {timePeriodFut}'
+            plt.title(titleLU)
+
+            # Name for output graph
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_GBIF_Historic.pdf'
+
+            #OutFolder
+            outFolder = 'VectorPCM_GBIFHistoric_wTaxon'
+
+            # Full Path
+            outPath = f'{outDir}\\{outFolder}\\{outPDF}'
+
+            # Delete File IF Exists
+            if os.path.exists(outPath):
+                os.remove(outPath)
+            # Make points file if needed
+            if os.path.exists(f'{outDir}\\{outFolder}'):
+                pass
+            else:
+                os.makedirs(f'{outDir}\\{outFolder}')
+
+            # Export Plot
+            plt.savefig(outPath, format='pdf')
+
+            # Close Plot
+            plt.close()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic - see - {outPath} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function'
+
+    except:
+        print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
+        exit()
+def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks):
+
+    """
+    STILL IN DEVELOPMENT
+    Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+    plots and graphs points for GBIF historic data, with accompanying Historical Percentile Values.
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+    :param outDir: Output directory
     :param outDir: Output directory
 
     :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
@@ -673,8 +984,9 @@ def vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir):
         return 'success function'
 
     except:
-        print(f'Failed - vertorGraphs')
+        print(f'Failed - vectorPCMPtsGBIFHistPerc')
         exit()
+
 
 def timeFun():
     from datetime import datetime
