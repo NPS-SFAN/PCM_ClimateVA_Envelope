@@ -109,7 +109,7 @@ def main():
         #     exit()
         #
         # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
+        # scriptMsg = f'Successfully completed - vectorGraphs - {messageTime}'
         # print(scriptMsg)
         # logFile = open(logFileName, "a")
         # logFile.write(scriptMsg + "\n")
@@ -125,7 +125,7 @@ def main():
         #     exit()
         #
         # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - vectorAllCommunities.py - {messageTime}'
+        # scriptMsg = f'Successfully completed - vectorAllCommunities - {messageTime}'
         # print(scriptMsg)
         # logFile = open(logFileName, "a")
         # logFile.write(scriptMsg + "\n")
@@ -141,23 +141,23 @@ def main():
         #     exit()
         #
         # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist.py - {messageTime}'
+        # scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist - {messageTime}'
         # print(scriptMsg)
         # logFile = open(logFileName, "a")
         # logFile.write(scriptMsg + "\n")
         # logFile.close()
 
         #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic w Taxon
+        # Create Vector Graphs PCM, Points GBIF Historic w Taxon -STILL In DEVELOPMENT
         #########################################################
         outFun = vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
             messageTime = timeFun()
-            print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
+            print("WARNING - Function vectorPCMPointsGBIFHistwTaxon - " + messageTime + " - Failed - Exiting Script")
             exit()
 
         messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist.py - {messageTime}'
+        scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHistwTaxon - {messageTime}'
         print(scriptMsg)
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
@@ -173,7 +173,7 @@ def main():
             exit()
 
         messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc.py - {messageTime}'
+        scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc - {messageTime}'
         print(scriptMsg)
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
@@ -757,28 +757,35 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
             # Subset only PCM records
             onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
-            # #Define the Style Mappings - including other shouldn't be need though
-            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
-            color_mapping = {'PCM': '#000000', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
-
             # Define the scatter Plot Size
             plt.figure(figsize=(10, 6))
 
             # Create the scatter plot with the GBIF (high number of points)
-            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='deep')
 
             #######################
             # Overlay the PCM Plots
+            #######################
+
+            # #Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
 
             # Create the scatter plot PCM only plots
             scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
                             sizes=size_mapping, palette=color_mapping)
 
-            new_labels = ['GBIF Historic (1981-2010)', 'PCM Plots']
+
+            #For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            #Add the PCM Plots label
+            new_labels.append('PCM Plots')
+
+            #Pass the new Labels/handles to the Legend
             handles, labels = scatterPlot.get_legend_handles_labels()
             scatterPlot.legend(handles=handles, labels=new_labels)
-
 
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(onlyPCMDF)):
@@ -846,6 +853,7 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
     except:
         print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
         exit()
+
 def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks):
 
     """
