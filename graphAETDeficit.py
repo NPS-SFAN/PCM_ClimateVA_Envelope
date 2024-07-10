@@ -83,69 +83,69 @@ def main():
         temporalDF = pd.DataFrame({'TemporalFields': temporalFields, 'AETFields': aetFields,
                                    'DeficitFields': deficitFields})
 
-        # ########################################################
-        # # Create Point Graphs by Community
-        # #########################################################
-        # outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        # if outFun.lower() != "success function":
-        #     messageTime = timeFun()
-        #     print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
-        #     exit()
-        #
-        # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
-        # print(scriptMsg)
-        # logFile = open(logFileName, "a")
-        # logFile.write(scriptMsg + "\n")
-        # logFile.close()
-        #
-        # #########################################################
-        # # Create Vector Graphs by Community Historic to Futures
-        # #########################################################
-        # outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        # if outFun.lower() != "success function":
-        #     messageTime = timeFun()
-        #     print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
-        #     exit()
-        #
-        # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - vectorGraphs - {messageTime}'
-        # print(scriptMsg)
-        # logFile = open(logFileName, "a")
-        # logFile.write(scriptMsg + "\n")
-        # logFile.close()
-        #
-        # #########################################################
-        # # Create Vector Graph Across All Communities
-        # #########################################################
-        # outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
-        # if outFun.lower() != "success function":
-        #     messageTime = timeFun()
-        #     print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
-        #     exit()
-        #
-        # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - vectorAllCommunities - {messageTime}'
-        # print(scriptMsg)
-        # logFile = open(logFileName, "a")
-        # logFile.write(scriptMsg + "\n")
-        # logFile.close()
+        ########################################################
+        # Create Point Graphs by Community
+        #########################################################
+        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+            exit()
 
-        # #########################################################
-        # # Create Vector Graphs PCM, Points GBIF Historic
-        # #########################################################
-        # outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
-        # if outFun.lower() != "success function":
-        #     messageTime = timeFun()
-        #     print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
-        #     exit()
-        #
-        # messageTime = timeFun()
-        # scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist - {messageTime}'
-        # print(scriptMsg)
-        # logFile = open(logFileName, "a")
-        # logFile.write(scriptMsg + "\n")
-        # logFile.close()
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        #########################################################
+        # Create Vector Graphs by Community Historic to Futures
+        #########################################################
+        outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - vectorGraphs - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        #########################################################
+        # Create Vector Graph Across All Communities
+        #########################################################
+        outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - vectorAllCommunities - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
+        #########################################################
+        # Create Vector Graphs PCM, Points GBIF Historic
+        #########################################################
+        outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
+        if outFun.lower() != "success function":
+            messageTime = timeFun()
+            print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
+            exit()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
 
         #########################################################
         # Create Vector Graphs PCM, Points GBIF Historic w Taxon -STILL In DEVELOPMENT
@@ -763,7 +763,11 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
             # Create the scatter plot with the GBIF (high number of points)
             sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
                             style='Taxon', palette='deep')
-
+            '''
+            # # Add Jitter to increase visibility  - Not Helping with Visibility - Turning Off
+            # sns.stripplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon', palette='deep',
+            #               jitter=True, alpha=0.5, native_scale=True)
+            '''
             #######################
             # Overlay the PCM Plots
             #######################
