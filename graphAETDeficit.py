@@ -11,6 +11,20 @@ communities on one graph. Out Folder 'vector'
 4) Graphs AET/Deficit Vectors change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM only,
 with GBIF Historic Points plots, by PCM Community. Out Folder 'VectorPCM_GBIFHistoricPts'
 
+5) Graphs AET/Deficit Vectors change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM only,
+with GBIF Historic Points plots and legend symbology with Taxon Scientific Name, Exports are by PCM Community.
+Out Folder 'VectorPCM_GBIFHistoric_wTaxon'
+
+6) Graphs AET/Deficit Vectors change from historic (i.e. 1981-2010) to futures (i.e. Mid Century 2040-2069) PCM only,
+with GBIF Historic Points plots and legend symbology with Taxon Scientific Name. Additionally a Kernel Density Estimate
+(KDE) Function Percentile Values for the GBIF historic data are plots.
+
+The KDE is the smoothed estimate of the data distribution of the points in data space
+(ie. AET and Deficit). A contour at a higher percentile level encloses a smaller area with a higher density of
+points. This is because it represents a higher threshold of density. Exports are by PCM Community.
+Out Folder 'VectorPCM_GBIFHistoric_wPercentile'
+
+
 Input:
    Point file with extracted Monitoring Locations and other points of interest (e.g. GBIF occurrences) with
    NPS Water Balance Data extracted
@@ -21,7 +35,7 @@ Output:
 Python Environment: PCM_VegClimateVA - Python 3.11
 Libraries:
 
-Date Developed - June 2024
+Date Developed - June/July 2024
 Created By - Kirk Sherrill - Data Scientist/Manager San Francisco Bay Area Network Inventory and Monitoring
 """
 
@@ -31,8 +45,11 @@ import os
 import traceback
 from datetime import datetime
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
-import dclab
+import numpy as np
+from scipy.stats import gaussian_kde
+
 
 #Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
 inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240709.csv'
@@ -48,6 +65,12 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
+#Variables for the Kernel Density Estimate Percentile Contours
+# Percentile Breaks
+percentiles = [90]
+
+# Define the colors for each percentile contour line
+percentile_colors = {90: 'blue'}
 
 # Output Name, OutDir, and Workspace
 outName = 'PCM_AETDeficit'  # Output name for excel file and logile
@@ -148,7 +171,7 @@ def main():
         logFile.close()
 
         #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic w Taxon -STILL In DEVELOPMENT
+        # Create Vector Graphs PCM, Points GBIF Historic w Taxon
         #########################################################
         outFun = vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir)
         if outFun.lower() != "success function":
@@ -164,9 +187,9 @@ def main():
         logFile.close()
 
         #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic with Percentile Contours - STILL IN DEVELOPMENT
+        # Create Vector Graphs PCM, Points GBIF Historic with Kernel Density Estimate Percentile Contours
         #########################################################
-        outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks)
+        outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles, percentile_colors)
         if outFun.lower() != "success function":
             messageTime = timeFun()
             print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
@@ -845,7 +868,7 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
             plt.close()
 
             messageTime = timeFun()
-            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic - see - {outPath} - {messageTime}'
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic with Taxonomy - see - {outPath} - {messageTime}'
             print(scriptMsg)
 
             logFile = open(logFileName, "a")
@@ -858,26 +881,32 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
         print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
         exit()
 
-def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks):
+def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles, percentile_colors):
 
     """
-    STILL IN DEVELOPMENT
     Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
-    plots and graphs points for GBIF historic data, with accompanying Historical Percentile Values.
+    plots and graphs points for GBIF historic data, with accompanying Kernel Density Estiamte (KDE)
+    Function Percentile Values for the GBIF historic data.
+
+    The KDE is the smoothed estimate of the data distribution of the points in data space
+    (ie. AET and Deficit). A contour at a higher percentile level encloses a smaller area with a higher density of
+    points. This is because it represents a higher threshold of density.
 
     :param pointsDF: points dataframe to be processed
     :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
     :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
     is the inner loop of the nest loop.
     :param outDir: Output directory
-    :param outDir: Output directory
+    :param percentiles: Kernel Density Estimate Percentile
+    :param percentile_colors: Colors per Percentile.
 
-    :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
-     GBIF points being graphed as well. Exported to the 'VectorPCM_GBIFHistoricPts' directory.
+
+    :return: PDFs file with scatter plot of GBIF Historic, PCM plots Historic to Mid Century, and KDE Percentiles
+    for the GBIF historical AET/Deficit data.
     """
     try:
 
-        #Prior to graphing remove records with Negative AET or Deficit
+        # Prior to graphing remove records with Negative AET or Deficit
         noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
 
         # Iterate through the VegTypes
@@ -909,28 +938,35 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks
             # Subset only PCM records
             onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
-            # #Define the Style Mappings - including other shouldn't be need though
-            size_mapping = {'PCM': 50, 'GBIF': 10, 'Other': 10}
-            color_mapping = {'PCM': '#000000', 'GBIF': '#ff7f0e', 'Other': '#2ca02c'}
-
             # Define the scatter Plot Size
             plt.figure(figsize=(10, 6))
 
             # Create the scatter plot with the GBIF (high number of points)
-            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='deep')
 
             #######################
             # Overlay the PCM Plots
+            #######################
+
+            # #Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
 
             # Create the scatter plot PCM only plots
-            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source',
+                                          size='Source',
+                                          sizes=size_mapping, palette=color_mapping)
 
-            new_labels = ['GBIF Historic (1981-2010)', 'PCM Plots']
+            #For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            # Add the PCM Plots label
+            new_labels.append('PCM Plots')
+
+            # Pass the new Labels/handles to the Legend
             handles, labels = scatterPlot.get_legend_handles_labels()
-            scatterPlot.legend(handles=handles, labels=new_labels)
-
+            #scatterPlot.legend(handles=handles, labels=new_labels)
 
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(onlyPCMDF)):
@@ -955,6 +991,36 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks
             max_val = notPCMDF[columns_to_include].max().max()
             plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
 
+            ######################
+            # Calculate Percentile Contours
+            ######################
+
+            # Calculate the point density
+            xy = np.vstack([notPCMDF[deficitFieldsHist], notPCMDF[aetFieldsHist]])
+            kde = gaussian_kde(xy)
+
+            # Define the grid over which to evaluate the KDE
+            y_grid = np.linspace(notPCMDF[aetFieldsHist].min(), notPCMDF[aetFieldsHist].max(), 100)
+            x_grid = np.linspace(notPCMDF[deficitFieldsHist].min(), notPCMDF[deficitFieldsHist].max(), 100)
+            X, Y = np.meshgrid(x_grid, y_grid)
+            positions = np.vstack([X.ravel(), Y.ravel()])
+            Z = kde(positions).reshape(X.shape)
+
+
+
+            # Create contour lines for specific percentiles with different colors
+            for percentile, color in percentile_colors.items():
+                level = np.percentile(Z.ravel(), percentile)
+                contour = plt.contour(X, Y, Z, levels=[level], colors=[color], linestyles='dashed', linewidths=3,
+                                      label=f'{percentile}th Percentile')
+                handles.append(
+                    Line2D([0], [0], color=color, linestyle='dashed', linewidth=3, label=f'{percentile}th Percentile'))
+
+            new_labels += [f'{percentile}th KDE Percentile' for percentile in percentiles]
+
+            #Add the Legend
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
             plt.xlabel('Avg. Total Annual Deficit (mm)')
             plt.ylabel('Avg. Total Annual AET (mm)')
 
@@ -962,10 +1028,10 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks
             plt.title(titleLU)
 
             # Name for output graph
-            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_GBIF_Historic.pdf'
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_GBIF_wPercentile.pdf'
 
-            #OutFolder
-            outFolder = 'VectorPCM_GBIFHistoricPts'
+            # OutFolder
+            outFolder = 'VectorPCM_GBIFHistoric_wPercentile'
 
             # Full Path
             outPath = f'{outDir}\\{outFolder}\\{outPDF}'
@@ -979,6 +1045,9 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks
             else:
                 os.makedirs(f'{outDir}\\{outFolder}')
 
+            #Add Grid
+            plt.grid(True)
+
             # Export Plot
             plt.savefig(outPath, format='pdf')
 
@@ -986,7 +1055,7 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, perBreaks
             plt.close()
 
             messageTime = timeFun()
-            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic - see - {outPath} - {messageTime}'
+            scriptMsg = f'Successfully created Graph - {vegTypeLU} for PCM, points GBIF Historic w Percentile - see - {outPath} - {messageTime}'
             print(scriptMsg)
 
             logFile = open(logFileName, "a")
