@@ -46,9 +46,11 @@ import traceback
 from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
 import seaborn as sns
 import numpy as np
 from scipy.stats import gaussian_kde
+
 
 
 #Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
@@ -201,6 +203,14 @@ def main():
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
         logFile.close()
+
+        messageTime = timeFun()
+        scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
+        print(scriptMsg)
+        logFile = open(logFileName, "a")
+        logFile.write(scriptMsg + "\n")
+        logFile.close()
+
 
 
 
@@ -424,7 +434,7 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
             #Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
             columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
             max_val = notPCMDF[columns_to_include].max().max()
-            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
 
 
             plt.xlabel('Avg. Total Annual Deficit (mm)')
@@ -686,7 +696,7 @@ def vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir):
             # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
             columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
             max_val = notPCMDF[columns_to_include].max().max()
-            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
 
             plt.xlabel('Avg. Total Annual Deficit (mm)')
             plt.ylabel('Avg. Total Annual AET (mm)')
@@ -835,7 +845,7 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
             # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
             columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
             max_val = notPCMDF[columns_to_include].max().max()
-            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
 
             plt.xlabel('Avg. Total Annual Deficit (mm)')
             plt.ylabel('Avg. Total Annual AET (mm)')
@@ -977,7 +987,7 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
                     lw=1
                 )
 
-                # Add arrow
+                #Add arrow
                 plt.annotate(
                     '',
                     xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
@@ -989,7 +999,7 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
             # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
             columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
             max_val = notPCMDF[columns_to_include].max().max()
-            plt.plot([0, max_val], [0, max_val], linestyle='--', color='black')
+            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
 
             ######################
             # Calculate Percentile Contours
@@ -1006,9 +1016,7 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
             positions = np.vstack([X.ravel(), Y.ravel()])
             Z = kde(positions).reshape(X.shape)
 
-
-
-            # Create contour lines for specific percentiles with different colors
+            #Create contour lines for specific percentiles with different colors
             for percentile, color in percentile_colors.items():
                 level = np.percentile(Z.ravel(), percentile)
                 contour = plt.contour(X, Y, Z, levels=[level], colors=[color], linestyles='dashed', linewidths=3,
@@ -1066,6 +1074,7 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
 
     except:
         print(f'Failed - vectorPCMPtsGBIFHistPerc')
+        traceback.print_exc(file=sys.stdout)
         exit()
 
 
@@ -1074,7 +1083,6 @@ def timeFun():
     b = datetime.now()
     messageTime = b.isoformat()
     return messageTime
-
 
 if __name__ == '__main__':
 
