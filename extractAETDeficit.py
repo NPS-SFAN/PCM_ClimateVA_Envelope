@@ -50,14 +50,19 @@ gbifLocDic = {'Source': 'GBIF', 'IDField': 'key', 'Latitude': 'decimalLatitude',
               'VegType': 'VegCode', 'Taxon': 'scientificNameLookup'}
 
 #List or Dictionary of WB Rasters to process
-rasterDataDic = {'Variable': ["AET", "AET", "Deficit", "Deficit"],
-             'Temporal': ["Historic", "MidCentury", "Historic",
-                          "MidCentury"],
-             'Path': [r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Historic\V_1_5_annual_gridmet_historical_AET_1981_2010_annual_means_cropped_units_mm_GCS.tif',
-                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\ensemble_2040_2069_annual_rcp85_AET_units_mm_GCS.tif',
-                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Historic\V_1_5_annual_gridmet_historical_Deficit_1981_2010_annual_means_cropped_units_mm_GCS.tif',
-                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\ensemble_2040_2069_annual_rcp85_Deficit_units_mm_GCS.tif']}
-
+rasterDataDic = {'Variable': ["AET", "AET_Ensemble", "AET_WW", "AET_HD", "Deficit", "Deficit_Ensemble", "Deficit_WW",
+                              "Deficit_HD"],
+             'Temporal': ["Historic", "MidCentury", "MidCentury", "MidCentury", "Historic",
+                          "MidCentury", "MidCentury", "MidCentury"],
+             'Path': [r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Historic\V_1_5_annual_gridmet_historical_AET_1981_2010_annual_means_cropped_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\ensemble_2040_2069_annual_rcp85_AET_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\V_1_5_annual_CNRM-CM5_rcp45_AET_2040_2069_annual_means_cropped_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\V_1_5_annual_MIROC-ESM-CHEM_rcp85_AET_2040_2069_annual_means_cropped_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Historic\V_1_5_annual_gridmet_historical_Deficit_1981_2010_annual_means_cropped_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\ensemble_2040_2069_annual_rcp85_Deficit_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\V_1_5_annual_CNRM-CM5_rcp45_Deficit_2040_2069_annual_means_cropped_units_mm_GCS_lte0.tif',
+                      r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\WBData\Futures\V_1_5_annual_MIROC-ESM-CHEM_rcp85_Deficit_2040_2069_annual_means_cropped_units_mm_GCS_lte0.tif'
+                      ]}
 
 # Output Name, OutDir, and Workspace
 outName = 'PCM_AETDeficit_Reference'  # Output name for excel file and logile
