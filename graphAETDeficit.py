@@ -54,7 +54,7 @@ from scipy.stats import gaussian_kde
 
 
 #Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
-inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240709.csv'
+inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_202400916.csv'
 
 #Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
 processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
@@ -67,7 +67,10 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
               'AETFields': ["AET_Historic", "AET_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
-#Variables for the Kernel Density Estimate Percentile Contours
+analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
+                'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPtsGBIFHistPerc']
+
+# Variables for the Kernel Density Estimate Percentile Contours
 # Percentile Breaks
 percentiles = [90]
 
@@ -80,7 +83,6 @@ outDir = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessmen
 workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
-
 
 def main():
     try:
@@ -111,98 +113,106 @@ def main():
         ########################################################
         # Create Point Graphs by Community
         #########################################################
-        outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
-            exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+        if 'pointGraphs' in analysisList:
+
+            outFun = pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function pointGraphs - " + messageTime + " - Failed - Exiting Script")
+                exit()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - pointGraphs.py - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         #########################################################
         # Create Vector Graphs by Community Historic to Futures
         #########################################################
-        outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        if 'vectorGraphs' in analysisList:
+            outFun = vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorGraphs - " + messageTime + " - Failed - Exiting Script")
+                exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorGraphs - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorGraphs - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         #########################################################
         # Create Vector Graph Across All Communities
         #########################################################
-        outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        if 'vectorAllCommunities' in analysisList:
+            outFun = vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorAllCommunities - " + messageTime + " - Failed - Exiting Script")
+                exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorAllCommunities - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorAllCommunities - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         #########################################################
         # Create Vector Graphs PCM, Points GBIF Historic
         #########################################################
-        outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        if 'vectorPCMPointsGBIFHist' in analysisList:
+            outFun = vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorPCMPointsGBIFHist - " + messageTime + " - Failed - Exiting Script")
+                exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHist - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         #########################################################
         # Create Vector Graphs PCM, Points GBIF Historic w Taxon
         #########################################################
-        outFun = vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorPCMPointsGBIFHistwTaxon - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        if 'vectorPCMPointsGBIFHistwTaxon' in analysisList:
+            outFun = vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorPCMPointsGBIFHistwTaxon - " + messageTime + " - Failed - Exiting Script")
+                exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHistwTaxon - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHistwTaxon - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         #########################################################
         # Create Vector Graphs PCM, Points GBIF Historic with Kernel Density Estimate Percentile Contours
         #########################################################
-        outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles, percentile_colors)
-        if outFun.lower() != "success function":
-            messageTime = timeFun()
-            print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
-            exit()
+        if 'vectorPCMPtsGBIFHistPerc' in analysisList:
+            outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles, percentile_colors)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
+                exit()
 
-        messageTime = timeFun()
-        scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc - {messageTime}'
-        print(scriptMsg)
-        logFile = open(logFileName, "a")
-        logFile.write(scriptMsg + "\n")
-        logFile.close()
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         messageTime = timeFun()
         scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
