@@ -54,7 +54,7 @@ from scipy.stats import gaussian_kde
 
 
 #Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
-inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_202400916.csv'
+inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240916.csv'
 
 #Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
 processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
@@ -68,7 +68,9 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
               'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
 
 analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
-                'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPtsGBIFHistPerc']
+                'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
+
+analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
 
 # Variables for the Kernel Density Estimate Percentile Contours
 # Percentile Breaks
@@ -181,6 +183,25 @@ def main():
             logFile.close()
 
         #########################################################
+        # Create Vector Graphs PCM, Points GBIF Historic with Kernel Density Estimate Percentile Contours
+        #########################################################
+        if 'vectorPCMPtsGBIFHistPerc' in analysisList:
+            outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles,
+                                              percentile_colors)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
+                exit()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+
+        #########################################################
         # Create Vector Graphs PCM, Points GBIF Historic w Taxon
         #########################################################
         if 'vectorPCMPointsGBIFHistwTaxon' in analysisList:
@@ -198,21 +219,23 @@ def main():
             logFile.close()
 
         #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic with Kernel Density Estimate Percentile Contours
+        # Create Vector Graphs PCM, Points GBIF Historic w Taxon, and Ensemble, Warm Wet and Hot Dry Vectors
         #########################################################
-        if 'vectorPCMPtsGBIFHistPerc' in analysisList:
-            outFun = vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentiles, percentile_colors)
+        if 'vectorPCMPointsGBIFHistwTaxonWWHD' in analysisList:
+            outFun = vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir)
             if outFun.lower() != "success function":
                 messageTime = timeFun()
-                print("WARNING - Function vectorPCMPtsGBIFHistPerc - " + messageTime + " - Failed - Exiting Script")
+                print(
+                    "WARNING - Function vectorPCMPointsGBIFHistwTaxonWWHD - " + messageTime + " - Failed - Exiting Script")
                 exit()
 
             messageTime = timeFun()
-            scriptMsg = f'Successfully completed - vectorPCMPtsGBIFHistPerc - {messageTime}'
+            scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHistwTaxonWWHD - {messageTime}'
             print(scriptMsg)
             logFile = open(logFileName, "a")
             logFile.write(scriptMsg + "\n")
             logFile.close()
+
 
         messageTime = timeFun()
         scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
@@ -253,8 +276,9 @@ def pointGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
     """
     try:
 
-        #Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         #Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
@@ -356,8 +380,9 @@ def vectorGraphs(pointsDF, vegTypesDF, temporalDF, outDir):
         #Calculation of change across points
         pointsDF.reset_index(inplace=True)
 
-        #Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         # Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
@@ -508,8 +533,9 @@ def vectorAllCommunities(pointsDF, vegTypesDF, temporalDF, outDir):
         #Calculation of change across points
         pointsDF.reset_index(inplace=True)
 
-        #Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         # Subset only PCM records
         onlyPCMDF = noZeroDF[noZeroDF['Source'] == 'PCM']
@@ -630,8 +656,9 @@ def vectorPCMPointsGBIFHist(pointsDF, vegTypesDF, temporalDF, outDir):
     """
     try:
 
-        #Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         # Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
@@ -768,8 +795,9 @@ def vectorPCMPointsGBIFHistwTaxon(pointsDF, vegTypesDF, temporalDF, outDir):
     """
     try:
 
-        #Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         # Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
@@ -926,8 +954,9 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
     """
     try:
 
-        # Prior to graphing remove records with Negative AET or Deficit
-        noZeroDF = pointsDF[(pointsDF['AET_Historic'] >= 0) & (pointsDF['AET_MidCentury'] >= 0)]
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
 
         # Iterate through the VegTypes
         for index, vegRow in vegTypesDF.iterrows():
@@ -1085,6 +1114,161 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
     except:
         print(f'Failed - vectorPCMPtsGBIFHistPerc')
         traceback.print_exc(file=sys.stdout)
+        exit()
+
+
+def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
+
+    """
+    Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+    plots and graphs points for GBIF historic data.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
+    Vectors include Ensemble Mean, Warm Wet and Hot Dry
+
+    Consider having 2x2 figure Ensembe, WW, Hot Dry, Spatial Points
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+    :param outDir: Output directory
+
+    :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
+     GBIF points being graphed. Exported to the 'VectorPCM_GBIFHistoricPts' directory.
+    """
+    try:
+
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
+
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
+
+            # Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+            # 2-Future
+
+            # Get First row from temporal dataframe, will be the Historic fields
+            seriesHist = temporalDF.iloc[0]
+            timePeriodHist = seriesHist.get("TemporalFields")
+            aetFieldsHist = seriesHist.get("AETFields")
+            deficitFieldsHist = seriesHist.get("DeficitFields")
+
+            # Get Second row from temporal dataframe, will be the Future fields
+            seriesFut = temporalDF.iloc[1]
+            timePeriodFut = seriesFut.get("TemporalFields")
+            aetFieldsFut = seriesFut.get("AETFields")
+            deficitFieldsFut = seriesFut.get("DeficitFields")
+
+            # Subset to only the vegetation of Interest
+            noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
+
+            # Subset to all other than 'PCM' records
+            notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
+
+            # Subset only PCM records
+            onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
+
+            # Define the scatter Plot Size
+            plt.figure(figsize=(10, 6))
+
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='deep')
+            '''
+            # # Add Jitter to increase visibility  - Not Helping with Visibility - Turning Off
+            # sns.stripplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon', palette='deep',
+            #               jitter=True, alpha=0.5, native_scale=True)
+            '''
+            #######################
+            # Overlay the PCM Plots
+            #######################
+
+            # #Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+
+            #For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            #Add the PCM Plots label
+            new_labels.append('PCM Plots')
+
+            #Pass the new Labels/handles to the Legend
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                plt.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
+                    color='#000000',
+                    lw=1
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
+            max_val = notPCMDF[columns_to_include].max().max()
+            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
+
+            plt.xlabel('Avg. Total Annual Deficit (mm)')
+            plt.ylabel('Avg. Total Annual AET (mm)')
+
+            titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to {timePeriodFut}'
+            plt.title(titleLU)
+
+            # Name for output graph
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_Ens_WW_HD_GBIF_Historic.pdf'
+
+            #OutFolder
+            outFolder = 'VectorPCM_GBIFHistoric_wTaxon_EnsWWHD'
+
+            # Full Path
+            outPath = f'{outDir}\\{outFolder}\\{outPDF}'
+
+            # Delete File IF Exists
+            if os.path.exists(outPath):
+                os.remove(outPath)
+            # Make points file if needed
+            if os.path.exists(f'{outDir}\\{outFolder}'):
+                pass
+            else:
+                os.makedirs(f'{outDir}\\{outFolder}')
+
+            # Export Plot
+            plt.savefig(outPath, format='pdf')
+
+            # Close Plot
+            plt.close()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic with Taxonomy - see - {outPath} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function'
+
+    except:
+        print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
         exit()
 
 
