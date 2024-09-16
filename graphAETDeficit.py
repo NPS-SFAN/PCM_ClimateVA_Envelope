@@ -63,9 +63,10 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
-              'Temporal': ["1981-2010", "2040-2069 Ensemble GCM"],
-              'AETFields': ["AET_Historic", "AET_MidCentury"],
-              'DeficitFields': ["Deficit_Historic", "Deficit_MidCentury"]}
+              'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
+              'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
+              'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_Ensemble_MidCentury",
+                                "Deficit_HD_MidCentury"]}
 
 analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
                 'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
@@ -1155,11 +1156,23 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             aetFieldsHist = seriesHist.get("AETFields")
             deficitFieldsHist = seriesHist.get("DeficitFields")
 
-            # Get Second row from temporal dataframe, will be the Future fields
-            seriesFut = temporalDF.iloc[1]
-            timePeriodFut = seriesFut.get("TemporalFields")
-            aetFieldsFut = seriesFut.get("AETFields")
-            deficitFieldsFut = seriesFut.get("DeficitFields")
+            # Get Second row from temporal dataframe, will be the Ensemble Fields
+            seriesFut_Ens = temporalDF.iloc[1]
+            timePeriodFut_Ens = seriesFut_Ens.get("TemporalFields")
+            aetFieldsFut_Ens = seriesFut_Ens.get("AETFields")
+            deficitFieldsFut_Ens = seriesFut_Ens.get("DeficitFields")
+
+            # Get Third row from temporal dataframe, will be the Warm Wet Fields
+            seriesFut_WW = temporalDF.iloc[2]
+            timePeriodFut_WW = seriesFut_WW.get("TemporalFields")
+            aetFieldsFut_WW = seriesFut_WW.get("AETFields")
+            deficitFieldsFut_WW = seriesFut_WW.get("DeficitFields")
+
+            # Get Fourth row from temporal dataframe, will be the Hot Dry Fields
+            seriesFut_HD = temporalDF.iloc[3]
+            timePeriodFut_HD = seriesFut_HD.get("TemporalFields")
+            aetFieldsFut_HD = seriesFut_HD.get("AETFields")
+            deficitFieldsFut_HD = seriesFut_HD.get("DeficitFields")
 
             # Subset to only the vegetation of Interest
             noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
@@ -1193,8 +1206,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
                             sizes=size_mapping, palette=color_mapping)
 
-
-            #For Legend get the list of unique GBIF Taxon
+            # For Legend get the list of unique GBIF Taxon
             new_labels = notPCMDF['Taxon'].unique().tolist()
 
             #Add the PCM Plots label
@@ -1204,11 +1216,13 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             handles, labels = scatterPlot.get_legend_handles_labels()
             scatterPlot.legend(handles=handles, labels=new_labels)
 
+            # STOPPED HERE - 9/16/2024 KRS
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(onlyPCMDF)):
+                # Ensemble
                 plt.plot(
-                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut].values[i]],
-                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut].values[i]],
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_Ens].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_Ens].values[i]],
                     color='#000000',
                     lw=1
                 )
@@ -1216,9 +1230,25 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
                 # Add arrow
                 plt.annotate(
                     '',
-                    xy=(onlyPCMDF[deficitFieldsFut].values[i], onlyPCMDF[aetFieldsFut].values[i]),
+                    xy=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_Ens].values[i]),
                     xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
                     arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
+                )
+
+                # Warm Wet
+                plt.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
+                    color='#0000FF',
+                    lw=1
+                )
+
+                # Add arrow
+                plt.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#0000FF', lw=1)
                 )
 
             # Add 1:1 dashed line
