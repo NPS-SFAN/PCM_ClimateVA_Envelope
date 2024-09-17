@@ -65,7 +65,7 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
-              'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_Ensemble_MidCentury",
+              'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
                                 "Deficit_HD_MidCentury"]}
 
 analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
@@ -1183,90 +1183,191 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             # Subset only PCM records
             onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
 
-            # Define the scatter Plot Size
-            plt.figure(figsize=(10, 6))
+            ###########################
+            # Start Constructing Figure
+            ###########################
 
+            # Define the scatter Plot Size
+            fig, axs = plt.subplots(2, 2, figsize=(20, 12))
+
+            #####
+            # Figure 1 - Upper Left - Ensemble
+            ######
             # Create the scatter plot with the GBIF (high number of points)
             sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
-                            style='Taxon', palette='deep')
-            '''
-            # # Add Jitter to increase visibility  - Not Helping with Visibility - Turning Off
-            # sns.stripplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon', palette='deep',
-            #               jitter=True, alpha=0.5, native_scale=True)
-            '''
-            #######################
-            # Overlay the PCM Plots
-            #######################
+                            style='Taxon', palette='deep', ax=axs[0, 0])
 
-            # #Define the Style Mappings for the PCM Overlay
+            # Overlay the PCM Plots
+            # Define the Style Mappings for the PCM Overlay
             size_mapping = {'PCM': 50}
             color_mapping = {'PCM': '#000000'}
 
             # Create the scatter plot PCM only plots
             scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
-                            sizes=size_mapping, palette=color_mapping)
+                            sizes=size_mapping, palette=color_mapping, ax=axs[0,0])
 
             # For Legend get the list of unique GBIF Taxon
             new_labels = notPCMDF['Taxon'].unique().tolist()
 
-            #Add the PCM Plots label
+            # Add the PCM Plots label
             new_labels.append('PCM Plots')
 
-            #Pass the new Labels/handles to the Legend
+            # Pass the new Labels/handles to the Legend
             handles, labels = scatterPlot.get_legend_handles_labels()
             scatterPlot.legend(handles=handles, labels=new_labels)
 
-            # STOPPED HERE - 9/16/2024 KRS
             # Draw vectors GBIF - iterate through the dataframe sequentially
             for i in range(len(onlyPCMDF)):
                 # Ensemble
-                plt.plot(
+                axs[0, 0].plot(
                     [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_Ens].values[i]],
                     [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_Ens].values[i]],
                     color='#000000',
-                    lw=1
+                    lw=1.0
                 )
 
                 # Add arrow
-                plt.annotate(
+                axs[0, 0].annotate(
                     '',
                     xy=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_Ens].values[i]),
                     xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1)
-                )
-
-                # Warm Wet
-                plt.plot(
-                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
-                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
-                    color='#0000FF',
-                    lw=1
-                )
-
-                # Add arrow
-                plt.annotate(
-                    '',
-                    xy=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
-                    xytext=(onlyPCMDF[deficitFieldsFut_Ens].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='#0000FF', lw=1)
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1.0)
                 )
 
             # Add 1:1 dashed line
-            # Get max value in not PCMDF Dataframe, should get the hightest value in the graph in nearly all cases
-            columns_to_include = [deficitFieldsHist, deficitFieldsHist, aetFieldsFut, aetFieldsHist]
+            # Get max value in not PCMDF Dataframe, should get the highest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, aetFieldsHist, deficitFieldsFut_Ens, aetFieldsFut_Ens]
             max_val = notPCMDF[columns_to_include].max().max()
-            plt.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
+            axs[0, 0].plot([max_val, 0], [0, max_val], linestyle='--', color='black')
 
-            plt.xlabel('Avg. Total Annual Deficit (mm)')
-            plt.ylabel('Avg. Total Annual AET (mm)')
+            # Add Title
+            axs[0, 0].set_title('Ensemble 2040-2069')
 
-            titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to {timePeriodFut}'
-            plt.title(titleLU)
+            #####
+            # Figure 2- Lower Right - Warm Wet
+            ######
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='deep', ax=axs[1, 0])
+
+            # Overlay the PCM Plots
+            # Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source',
+                                          size='Source',
+                                          sizes=size_mapping, palette=color_mapping, ax=axs[1, 0])
+
+            # For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            # Add the PCM Plots label
+            new_labels.append('PCM Plots')
+
+            # Pass the new Labels/handles to the Legend
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                # Warm Wet
+                axs[1, 0].plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
+                    color='#000000',
+                    lw=1.0
+                )
+
+                # Add arrow
+                axs[1, 0].annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut_WW].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1.0)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the highest value in the graph in nearly all cases
+            # using the Ensemble to be consistent acorss figures
+            columns_to_include = [deficitFieldsHist, aetFieldsHist, deficitFieldsFut_Ens, aetFieldsFut_Ens]
+            max_val = notPCMDF[columns_to_include].max().max()
+            axs[1, 0].plot([max_val, 0], [0, max_val], linestyle='--', color='black')
+
+            # Add Title
+            axs[1, 0].set_title('Warm Wet 2040-2069')
+
+            #####
+            # Figure 3- Upper Right - Hot Dry
+            ######
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='deep', ax=axs[0, 1])
+
+            # Overlay the PCM Plots
+            # Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source',
+                                          size='Source',
+                                          sizes=size_mapping, palette=color_mapping, ax=axs[0, 1])
+
+            # For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            # Add the PCM Plots label
+            new_labels.append('PCM Plots')
+
+            # Pass the new Labels/handles to the Legend
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            scatterPlot.legend(handles=handles, labels=new_labels)
+
+            # Draw vectors GBIF - iterate through the dataframe sequentially
+            for i in range(len(onlyPCMDF)):
+                # Hot Dry
+                axs[0, 1].plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_HD].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]],
+                    color='#000000',
+                    lw=1.0
+                )
+
+                # Add arrow
+                axs[0, 1].annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut_HD].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#000000', lw=1.0)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the highest value in the graph in nearly all cases
+            # using the Ensemble to be consistent across figures
+            columns_to_include = [deficitFieldsHist, aetFieldsHist, deficitFieldsFut_Ens, aetFieldsFut_Ens]
+            max_val = notPCMDF[columns_to_include].max().max()
+            axs[0, 1].plot([max_val, 0], [0, max_val], linestyle='--', color='black')
+
+            # Add Title
+            axs[0, 1].set_title('Hot Dry 2040-2069')
+
+            #########################
+            # Attributes Whole Figure
+            #########################
+            # Set common labels
+            for ax in axs.flat:
+                ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
+
+            # Add Overall Figure Title
+            titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to 2040 - 2069'
+            fig.suptitle(titleLU, fontsize=16)
 
             # Name for output graph
-            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_{timePeriodFut}_Ens_WW_HD_GBIF_Historic.pdf'
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_2040_2069_EnsembleWWHD.pdf'
 
-            #OutFolder
+            # OutFolder
             outFolder = 'VectorPCM_GBIFHistoric_wTaxon_EnsWWHD'
 
             # Full Path
@@ -1278,6 +1379,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             # Make points file if needed
             if os.path.exists(f'{outDir}\\{outFolder}'):
                 pass
+                pass
             else:
                 os.makedirs(f'{outDir}\\{outFolder}')
 
@@ -1288,7 +1390,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             plt.close()
 
             messageTime = timeFun()
-            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for PCM, points GBIF Historic with Taxonomy - see - {outPath} - {messageTime}'
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for vectorPCMPointsGBIFTaxonWWHD - see - {outPath} - {messageTime}'
             print(scriptMsg)
 
             logFile = open(logFileName, "a")
