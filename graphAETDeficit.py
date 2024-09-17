@@ -24,6 +24,9 @@ The KDE is the smoothed estimate of the data distribution of the points in data 
 points. This is because it represents a higher threshold of density. Exports are by PCM Community.
 Out Folder 'VectorPCM_GBIFHistoric_wPercentile'
 
+7) Graphs with AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+    plots and graphs points for GBIF historic data.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
+    Vectors include Ensemble Mean, Warm Wet and Hot Dry
 
 Input:
    Point file with extracted Monitoring Locations and other points of interest (e.g. GBIF occurrences) with
@@ -46,17 +49,16 @@ import traceback
 from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.patches import FancyArrowPatch
 import seaborn as sns
 import numpy as np
 from scipy.stats import gaussian_kde
+import geopandas as gpd
+import contextily as ctx
 
-
-
-#Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
+# Excel file with the Monitoring Location and GBIF Obserations and extracted AET and Deficit values
 inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240916.csv'
 
-#Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
+# Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
 processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
                           "SSCR"],
               'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
@@ -67,9 +69,9 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
                                 "Deficit_HD_MidCentury"]}
-
-analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
-                'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
+# List of Graphs to Create
+# analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
+#                 'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
 
 analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
 
@@ -1353,12 +1355,51 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             # Add Title
             axs[0, 1].set_title('Hot Dry 2040-2069')
 
+            # Set common axis labels all plots, lower left will be overwritten during map creation.
+            for ax in axs.flat:
+                ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
+
+
+            #####
+            # Figure 4- Lower Right - Map of Points GBIF and PCM by Community
+            ######
+
+            # Set PCM plots to 'Taxon = PCM
+            onlyPCMDF.loc[onlyPCMDF['Source'] == 'PCM', 'Taxon'] = 'PCM Plot'
+
+            # Convert DataFrame with Veg to aa GeoDataFrame be sure the extracted points are from GCS WGS 1984
+            # Only PCM GDF
+            gdfPCMOnly = gpd.GeoDataFrame(
+                onlyPCMDF,
+                geometry=gpd.points_from_xy(onlyPCMDF.Longitude, onlyPCMDF.Latitude),
+                crs="EPSG:4326")
+
+            # Only PCM GDF
+            gdfGBIFOnly = gpd.GeoDataFrame(
+                notPCMDF,
+                geometry=gpd.points_from_xy(notPCMDF.Longitude, notPCMDF.Latitude),
+                crs="EPSG:4326")
+
+            # Add a map with topographic background to subplot [1, 1]
+            ax = axs[1, 1]
+
+            # Plot GBIF Points First
+            gdfGBIFOnly.plot(ax=ax, marker='o', c='Taxon', cmap='tab10', legend=True)
+
+            # Plot the PCM Plots Second so if on top and visible
+            gdfPCMOnly.plot(ax=ax, marker='o', color='black', markersize=100, label='PCM Plots')
+
+            # Add a topographic background
+            ctx.add_basemap(ax, crs=gdfGBIFOnly.crs.to_string(), source=ctx.providers.CartoDB.Voyager)
+
+            # Set title and labels
+            ax.set_title(f'GBIF Taxon and PCM Plots for - {vegNameLU}')
+            ax.set_xlabel('Longitude')
+            ax.set_ylabel('Latitude')
+
             #########################
             # Attributes Whole Figure
             #########################
-            # Set common labels
-            for ax in axs.flat:
-                ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
 
             # Add Overall Figure Title
             titleLU = f'{vegNameLU} - PCM change from {timePeriodHist} to 2040 - 2069'
