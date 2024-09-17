@@ -42,11 +42,11 @@ from datetime import datetime
 from pygbif import species
 from pygbif import occurrences as occ
 
-#File (Excel/CSV) with vegtation taxon to be idenfities
+# File (Excel/CSV) with vegtation taxon to be idenfities
 inTable = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\PCM\ReferenceTaxon\PCM_ReferenceTaxon_20240604.xlsx'
-#Worksheet to process if the inTable is an excel file
+# Worksheet to process if the inTable is an excel file
 inWorksheet = 'ReferenceTaxon'
-#Field in the Vegetation worksheet that defined the scientific name
+# Field in the Vegetation worksheet that defined the scientific name
 lookupField = 'Species'
 
 # Output Name, OutDir, and Workspace
@@ -56,12 +56,12 @@ workspace = f'{outDir}\\workspace'  # Workspace Output Directory
 dateNow = datetime.now().strftime('%Y%m%d')
 logFileName = f'{workspace}\\{outName}_{dateNow}.LogFile.txt'  # Name of the .txt script logfile which is saved in the workspace directory
 
-#Occurrence Download Parameters
-#Number of records to download per GBIF Occurrence Call on occurrence.search
+# Occurrence Download Parameters
+# Number of records to download per GBIF Occurrence Call on occurrence.search
 chunkSize = 300
-#Total Number of GBIF records to download per
+# Total Number of GBIF records to download per taxon
 totalRecords = 10200
-#List of fiels to retain from the GBIF Occurrence Pulls
+# List of fields to retain from the GBIF Occurrence Pulls
 fieldsToRetain = ['key', 'taxonKey', 'scientificName', 'basisOfRecord', 'taxonomicStatus', 'year', 'eventDate',
                   'decimalLatitude', 'decimalLongitude', 'continent', 'stateProvince', 'country', 'datasetName',
                   'institutionCode']
