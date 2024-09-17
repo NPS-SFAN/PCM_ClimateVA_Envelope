@@ -76,7 +76,7 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
 analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
 
 # Variable defines the size of the output figure - currently only being used in the 'vectorPCMPointsGBIFHistwTaxonWWHD'
-# graph
+# graph, First Column is width, second Height in inches
 figSize = [20, 12]
 
 # Variables for the Kernel Density Estimate Percentile Contours
@@ -1157,7 +1157,6 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
 
             # Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
             # 2-Future
-
             # Get First row from temporal dataframe, will be the Historic fields
             seriesHist = temporalDF.iloc[0]
             timePeriodHist = seriesHist.get("TemporalFields")
@@ -1396,6 +1395,10 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             # Add a map with topographic background to subplot [1, 1]
             ax = axs[1, 1]
 
+            # Set  longitude and latitude bounding boxes to CONUS
+            axs[1, 1].set_xlim([-127, -66])  # Set longitude bounds
+            axs[1, 1].set_ylim([25, 50])  # Set latitude bounds
+
             # Plot GBIF Points First
             gdfGBIFOnly.plot(ax=ax, marker='o', c='Taxon', cmap='tab10', legend=True)
 
@@ -1409,6 +1412,8 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             ax.set_title(f'GBIF Taxon and PCM Plots for - {vegNameLU}')
             ax.set_xlabel('Longitude')
             ax.set_ylabel('Latitude')
+
+
 
             # Create a custom legend for the map matching the scatter plot symbology
             handles = [plt.Line2D([0], [0], marker='o', color=color_dict[taxon], linestyle='None', markersize=10,
