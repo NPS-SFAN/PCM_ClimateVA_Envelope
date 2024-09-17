@@ -59,23 +59,23 @@ import contextily as ctx
 inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240916.csv'
 
 # Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
-# processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
-#                           "SSCR"],
-#               'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
-#                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
-#                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
-#                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
-#               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
-#               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
-#               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
-#                                 "Deficit_HD_MidCentury"]}
-
-processDic = {'VegType': ["REDW"],
-              'VegName': ["Redwood Forest"],
+processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
+                          "SSCR"],
+              'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
+                          "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
+                          "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
+                          "Northern Coastal Scrub", "Southern Coastal Scrub"],
               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
                                 "Deficit_HD_MidCentury"]}
+# Test Dictionary
+# processDic = {'VegType': ["REDW"],
+#               'VegName': ["Redwood Forest"],
+#               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
+#               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
+#               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
+#                                 "Deficit_HD_MidCentury"]}
 # List of Graphs to Create
 # analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
 #                 'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
