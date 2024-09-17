@@ -75,6 +75,10 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
 
 analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
 
+# Variable defines the size of the output figure - currently only being used in the 'vectorPCMPointsGBIFHistwTaxonWWHD'
+# graph
+figSize = [20, 12]
+
 # Variables for the Kernel Density Estimate Percentile Contours
 # Percentile Breaks
 percentiles = [90]
@@ -222,10 +226,11 @@ def main():
             logFile.close()
 
         #########################################################
-        # Create Vector Graphs PCM, Points GBIF Historic w Taxon, and Ensemble, Warm Wet and Hot Dry Vectors
+        # Create Vector Graphs PCM, Points GBIF Historic w Taxon, Ensemble, Warm Wet and Hot Dry Vectors and spatial
+        # map.  2x2 figure, using the 'figSize' variable to determine the desired output figure size
         #########################################################
         if 'vectorPCMPointsGBIFHistwTaxonWWHD' in analysisList:
-            outFun = vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir)
+            outFun = vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize, outDir)
             if outFun.lower() != "success function":
                 messageTime = timeFun()
                 print(
@@ -1120,19 +1125,20 @@ def vectorPCMPtsGBIFHistPerc(pointsDF, vegTypesDF, temporalDF, outDir, percentil
         exit()
 
 
-def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
+def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize, outDir):
 
     """
     Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
-    plots and graphs points for GBIF historic data.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
-    Vectors include Ensemble Mean, Warm Wet and Hot Dry
+    plots and graphs points for GBIF historic data in a 2 x 2 figure.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
+    Vectors include Ensemble Mean, Warm Wet and Hot Dry, and the lower right is a map of the points in the scatterplots.
 
-    Consider having 2x2 figure Ensembe, WW, Hot Dry, Spatial Points
+    2x2 scatter plot figure Ensembe, Warm Wet, Hot Dry, Spatial Points
 
     :param pointsDF: points dataframe to be processed
     :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
     :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
     is the inner loop of the nest loop.
+    :param figSize: Define the size in inches of the created figure
     :param outDir: Output directory
 
     :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
@@ -1190,7 +1196,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             ###########################
 
             # Define the scatter Plot Size
-            fig, axs = plt.subplots(2, 2, figsize=(20, 12))
+            fig, axs = plt.subplots(2, 2, figsize=(int(figSize[0]), int(figSize[1])))
 
             #####
             # Figure 1 - Upper Left - Ensemble
@@ -1359,7 +1365,6 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             for ax in axs.flat:
                 ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
 
-
             #####
             # Figure 4- Lower Right - Map of Points GBIF and PCM by Community
             ######
@@ -1380,6 +1385,14 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
                 geometry=gpd.points_from_xy(notPCMDF.Longitude, notPCMDF.Latitude),
                 crs="EPSG:4326")
 
+            # Create color palette matching the scatter plot symbology
+            unique_taxon = notPCMDF['Taxon'].unique()
+            palette = sns.color_palette('deep', len(unique_taxon))
+            color_dict = dict(zip(unique_taxon, palette))
+
+            # Add 'PCM Plots' with a specific color (e.g., black)
+            color_dict['PCM Plots'] = '#000000'
+
             # Add a map with topographic background to subplot [1, 1]
             ax = axs[1, 1]
 
@@ -1396,6 +1409,17 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, outDir):
             ax.set_title(f'GBIF Taxon and PCM Plots for - {vegNameLU}')
             ax.set_xlabel('Longitude')
             ax.set_ylabel('Latitude')
+
+            # Create a custom legend for the map matching the scatter plot symbology
+            handles = [plt.Line2D([0], [0], marker='o', color=color_dict[taxon], linestyle='None', markersize=10,
+                                  label=taxon)
+                       for taxon in unique_taxon]  # For GBIF points
+
+            handles.append(plt.Line2D([0], [0], marker='o', color='black', linestyle='None', markersize=10,
+                                      label='PCM Plots'))  # For PCM Plots
+
+            # Add the legend to the map subplot
+            ax.legend(handles=handles, title=None, loc='best')
 
             #########################
             # Attributes Whole Figure
