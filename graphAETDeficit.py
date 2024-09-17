@@ -59,12 +59,19 @@ import contextily as ctx
 inPointsWB = r'C:\Users\KSherrill\OneDrive - DOI\SFAN\Climate\VulnerabilityAssessment\AETDeficit\ReferenceTaxon\PCM_AETDeficit_Reference_20240916.csv'
 
 # Define the dictionary with the Vegetation Type (i.e. Codes), Vegation Names, AET Fields, and Deficit fields to process
-processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
-                          "SSCR"],
-              'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
-                          "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
-                          "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
-                          "Northern Coastal Scrub", "Southern Coastal Scrub"],
+# processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE", "FRSH", "REDW", "SALT", "SCRB",
+#                           "SSCR"],
+#               'VegName': ["California Annual Grassland", "Blue Oak Woodland", "Bald Hills Prairie",
+#                           "Coast Live Oak Woodlands", "Coastal Terrace Prairie", "Douglas Fir Forest",
+#                           "Coastal Dune Scrub", "Freshwater Wetlands", "Redwood Forest", "Coastal Salt Marsh",
+#                           "Northern Coastal Scrub", "Southern Coastal Scrub"],
+#               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
+#               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
+#               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
+#                                 "Deficit_HD_MidCentury"]}
+
+processDic = {'VegType': ["REDW"],
+              'VegName': ["Redwood Forest"],
               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
@@ -1202,7 +1209,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             ######
             # Create the scatter plot with the GBIF (high number of points)
             sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
-                            style='Taxon', palette='deep', ax=axs[0, 0])
+                            style='Taxon', palette='coolwarm', ax=axs[0, 0])
 
             # Overlay the PCM Plots
             # Define the Style Mappings for the PCM Overlay
@@ -1255,7 +1262,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             ######
             # Create the scatter plot with the GBIF (high number of points)
             sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
-                            style='Taxon', palette='deep', ax=axs[1, 0])
+                            style='Taxon', palette='coolwarm', ax=axs[1, 0])
 
             # Overlay the PCM Plots
             # Define the Style Mappings for the PCM Overlay
@@ -1310,7 +1317,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             ######
             # Create the scatter plot with the GBIF (high number of points)
             sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
-                            style='Taxon', palette='deep', ax=axs[0, 1])
+                            style='Taxon', palette='coolwarm', ax=axs[0, 1])
 
             # Overlay the PCM Plots
             # Define the Style Mappings for the PCM Overlay
@@ -1386,7 +1393,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
 
             # Create color palette matching the scatter plot symbology
             unique_taxon = notPCMDF['Taxon'].unique()
-            palette = sns.color_palette('deep', len(unique_taxon))
+            palette = sns.color_palette('coolwarm', len(unique_taxon))
             color_dict = dict(zip(unique_taxon, palette))
 
             # Add 'PCM Plots' with a specific color (e.g., black)
@@ -1399,11 +1406,17 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             axs[1, 1].set_xlim([-127, -66])  # Set longitude bounds
             axs[1, 1].set_ylim([25, 50])  # Set latitude bounds
 
-            # Plot GBIF Points First
-            gdfGBIFOnly.plot(ax=ax, marker='o', c='Taxon', cmap='tab10', legend=True)
+            # # Plot GBIF Points First
+            # gdfGBIFOnly.plot(ax=ax, marker='o', c='Taxon', cmap='tab10', legend=True)
+            #
+            # # Plot the PCM Plots Second so if on top and visible
+            # gdfPCMOnly.plot(ax=ax, marker='o', color='black', markersize=100, label='PCM Plots')
 
-            # Plot the PCM Plots Second so if on top and visible
-            gdfPCMOnly.plot(ax=ax, marker='o', color='black', markersize=100, label='PCM Plots')
+            gdfGBIFOnly['color'] = gdfGBIFOnly['Taxon'].map(color_dict)  # Map 'Taxon' to color
+            gdfGBIFOnly.plot(ax=ax, marker='o', color=gdfGBIFOnly['color'], markersize=10, legend=True)
+
+            # Plot the PCM Plots Second so they are on top and visible
+            gdfPCMOnly.plot(ax=ax, marker='o', color='black', markersize=25, label='PCM Plots')
 
             # Add a topographic background
             ctx.add_basemap(ax, crs=gdfGBIFOnly.crs.to_string(), source=ctx.providers.CartoDB.Voyager)
@@ -1413,12 +1426,17 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             ax.set_xlabel('Longitude')
             ax.set_ylabel('Latitude')
 
-
+            # # Create a custom legend for the map matching the scatter plot symbology
+            # handles = [plt.Line2D([0], [0], marker='o', color=color_dict[taxon], linestyle='None', markersize=10,
+            #                       label=taxon)
+            #            for taxon in unique_taxon]  # For GBIF points
+            #
+            # handles.append(plt.Line2D([0], [0], marker='o', color='black', linestyle='None', markersize=10,
+            #                           label='PCM Plots'))  # For PCM Plots
 
             # Create a custom legend for the map matching the scatter plot symbology
             handles = [plt.Line2D([0], [0], marker='o', color=color_dict[taxon], linestyle='None', markersize=10,
-                                  label=taxon)
-                       for taxon in unique_taxon]  # For GBIF points
+                                  label=taxon) for taxon in unique_taxon]  # For GBIF points
 
             handles.append(plt.Line2D([0], [0], marker='o', color='black', linestyle='None', markersize=10,
                                       label='PCM Plots'))  # For PCM Plots
