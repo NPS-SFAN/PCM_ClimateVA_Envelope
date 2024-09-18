@@ -26,13 +26,14 @@ Out Folder 'VectorPCM_GBIFHistoric_wPercentile'
 
 7) Graphs with AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
     plots and graphs points for GBIF historic data.  Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type).
-    Vectors include Ensemble Mean, Warm Wet and Hot Dry
+    Vectors include Ensemble Mean, Warm Wet and Hot Dry. Output figure also includes a map of the points locations used
+    in the bioclimatic analysis.
 
 Input:
    Point file with extracted Monitoring Locations and other points of interest (e.g. GBIF occurrences) with
    NPS Water Balance Data extracted
 Output:
-    1) See description above.
+    1) See descriptions above.
 
 
 Python Environment: PCM_VegClimateVA - Python 3.11
