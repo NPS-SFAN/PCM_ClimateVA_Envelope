@@ -79,7 +79,7 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
 #                                 "Deficit_HD_MidCentury"]}
 # List of Graphs to Create
 # analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
-#                 'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
+#                  'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
 
 analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
 
@@ -1258,7 +1258,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
             # Add Title
             axs[0, 0].set_title('Ensemble 2040-2069')
 
-            #####
+            #####.
             # Figure 2- Lower Right - Warm Wet
             ######
             # Create the scatter plot with the GBIF (high number of points)
