@@ -1,6 +1,6 @@
 """
 PCM_VegSummaries_ClimateVA.py
-Script performs summary of the NAWMA Vegeetation Plot of the Plant Communities Monitoring Protocol.
+Script performs summary of the NAWMA Vegetation Plot of the Plant Communities Monitoring Protocol.
 Summary is to be used for identifying highest cover taxon by PCM Community Type to be used in as
 part of the SFAN PCM Climate Change Vulnerability Assessment.
 
