@@ -1,6 +1,6 @@
 # PCM_ClimateVA
 
- Plant Communities Monitoring Climate Vulnearability Analysis Scripts
+ Plant Communities Monitoring Climate Vulnearability Analysis Bioclimatic Envelope Scripts
 
  ## PCM_VegSummaries_ClimateVA.py
  Summarizes Plant Communities Monitoring NAWMA vegetation data
