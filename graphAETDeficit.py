@@ -1621,10 +1621,10 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
             labels = ['Monitoring Plots' if label == 'PCM' else label for label in labels]
 
             # Create custom line handles for vectors
-            ww_handle = mlines.Line2D([], [], color='#001c7f', lw=1.5, label='Warm Wet Change', linestyle='-',
-                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#001c7f')
-            hd_handle = mlines.Line2D([], [], color='#e24a33', lw=1.5, label='Hot Dry Change', linestyle='-',
-                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#e24a33')
+            ww_handle = mlines.Line2D([], [], color='#0000ff', lw=1.5, label='Warm Wet Change', linestyle='-',
+                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#0000ff')
+            hd_handle = mlines.Line2D([], [], color='#ff0000', lw=1.5, label='Hot Dry Change', linestyle='-',
+                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#ff0000')
 
             # Add to handles
             handles.append(ww_handle)
@@ -1637,11 +1637,11 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
 
             # Draw vectors GBIF Hot Dry first will have great length easier to see then Warm Wet
             for i in range(len(onlyPCMDF)):
-                # Ensemble
+
                 axs.plot(
                     [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_HD].values[i]],
                     [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]],
-                    color='#e24a33',
+                    color='#ff0000',
                     lw=1.0
                 )
 
@@ -1650,7 +1650,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
                     '',
                     xy=(onlyPCMDF[deficitFieldsFut_HD].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]),
                     xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='#e24a33', lw=1.0)
+                    arrowprops=dict(arrowstyle="->", color='#ff0000', lw=1.0)
                 )
 
             # Draw vectors GBIF Warm Wet
@@ -1659,7 +1659,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
                 axs.plot(
                     [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
                     [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
-                    color='#001c7f',
+                    color='#0000ff',
                     lw=1.0
                 )
 
@@ -1668,7 +1668,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
                     '',
                     xy=(onlyPCMDF[deficitFieldsFut_WW].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
                     xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
-                    arrowprops=dict(arrowstyle="->", color='#001c7f', lw=1.0)
+                    arrowprops=dict(arrowstyle="->", color='#0000ff', lw=1.0)
                 )
 
             # Add 1:1 dashed line
@@ -1681,23 +1681,7 @@ def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSi
             for ax in np.atleast_1d(axs).flat:
                 ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
 
-                # Draw vectors GBIF Warm Wet
-                for i in range(len(onlyPCMDF)):
-                    # Ensemble
-                    axs.plot(
-                        [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
-                        [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
-                        color='#001c7f',
-                        lw=1.0
-                    )
 
-                    # Add arrow
-                    axs.annotate(
-                        '',
-                        xy=(onlyPCMDF[deficitFieldsFut_WW].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
-                        xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
-                        arrowprops=dict(arrowstyle="->", color='#001c7f', lw=1.0)
-                    )
 
             #########################
             # Attributes Whole Figure
