@@ -50,6 +50,8 @@ import traceback
 from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 import seaborn as sns
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -70,22 +72,17 @@ processDic = {'VegType': ["ANGR", "BLUO", "CHRT", "CLOW", "DEPR", "DGLF", "DUNE"
               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
                                 "Deficit_HD_MidCentury"]}
-# Test Dictionary
-# processDic = {'VegType': ["REDW"],
-#               'VegName': ["Redwood Forest"],
-#               'Temporal': ["1981-2010", "2040-2069 Ensemble GCM", "2040-2069 Warm Wet", "2040-2069 Hot Dry"],
-#               'AETFields': ["AET_Historic", "AET_Ensemble_MidCentury", "AET_WW_MidCentury", "AET_HD_MidCentury"],
-#               'DeficitFields': ["Deficit_Historic", "Deficit_Ensemble_MidCentury", "Deficit_WW_MidCentury",
-#                                 "Deficit_HD_MidCentury"]}
+
 # List of Graphs to Create
 # analysisList = ['pointGraphs', 'vectorGraphs', 'vectorAllCommunities', 'vectorPCMPointsGBIFHist',
-#                  'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD']
+#                  'vectorPCMPtsGBIFHistPerc', 'vectorPCMPointsGBIFHistwTaxon', 'vectorPCMPointsGBIFHistwTaxonWWHD',
+#                  'vectorPCMPointsGBIFHistwTaxonWWHDOne']
 
-analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHD']
+analysisList = ['vectorPCMPointsGBIFHistwTaxonWWHDOne']
 
 # Variable defines the size of the output figure - currently only being used in the 'vectorPCMPointsGBIFHistwTaxonWWHD'
 # graph, First Column is width, second Height in inches
-figSize = [20, 12]
+figSize = [20, 12]  # Use this size for 2x2 outputs
 
 # Variables for the Kernel Density Estimate Percentile Contours
 # Percentile Breaks
@@ -252,6 +249,27 @@ def main():
             logFile.write(scriptMsg + "\n")
             logFile.close()
 
+        #########################################################
+        # Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+        # plots and graphs points for GBIF historic data in a 1x1 figure (i.e. on figure).
+        # Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type). Vectors include Warm Wet and Hot Dry only.
+        #
+        # Figure being created for the CCAM Manuscript
+        #########################################################
+        if 'vectorPCMPointsGBIFHistwTaxonWWHDOne' in analysisList:
+            outFun = vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSize, outDir)
+            if outFun.lower() != "success function":
+                messageTime = timeFun()
+                print(
+                    "WARNING - Function vectorPCMPointsGBIFHistwTaxonWWHDOne - " + messageTime + " - Failed - Exiting Script")
+                exit()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully completed - vectorPCMPointsGBIFHistwTaxonWWHDOne - {messageTime}'
+            print(scriptMsg)
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
 
         messageTime = timeFun()
         scriptMsg = f'Successfully completed - graphAETDeficit.py - {messageTime}'
@@ -259,9 +277,6 @@ def main():
         logFile = open(logFileName, "a")
         logFile.write(scriptMsg + "\n")
         logFile.close()
-
-
-
 
     except:
         messageTime = timeFun()
@@ -1491,6 +1506,247 @@ def vectorPCMPointsGBIFHistwTaxonWWHD(pointsDF, vegTypesDF, temporalDF, figSize,
     except:
         print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
         exit()
+
+def vectorPCMPointsGBIFHistwTaxonWWHDOne(pointsDF, vegTypesDF, temporalDF, figSize, outDir):
+
+    """
+    Creates AET/Deficit scatter plots Vector Graphs (change from Historic to Current) by vegetation type for PCM
+    plots and graphs points for GBIF historic data in a 1x1 figure (i.e. on figure).
+    Graph symbology includes GBIF Taxon (i.e. Taxon by Veg Type). Vectors include Warm Wet and Hot Dry only.
+
+    Figure being created for the CCAM Manuscript
+
+
+
+    :param pointsDF: points dataframe to be processed
+    :param vegTypesDF: Dataframe define the Veg Types to be iterated through, this is the out loop
+    :param temporalDF: Dataframe defining the Temporal Periods and associated AET and Deficit Fields.  This
+    is the inner loop of the nest loop.
+    :param figSize: Define the size in inches of the created figure
+    :param outDir: Output directory
+
+    :return: PDFs file with Vector plots AET/Deficit per Veg Type (i.e. community) for PCM plots with Historical
+     GBIF points being graphed. Exported to the 'VectorPCM_GBIFHistoricPts' directory.
+    """
+    try:
+
+        #Over riding the defined figure size in setup
+        figSize = [10, 6]
+
+
+        # Prior to graphing remove records without data this will be -3.4028235E+38, all data less than 0 was set to 0
+        # the 'extractAETDeficit routine
+        noZeroDF = pointsDF[pointsDF['AET_Historic'] >= 0]
+
+        # Iterate through the VegTypes
+        for index, vegRow in vegTypesDF.iterrows():
+            vegTypeLU = vegRow.get("VegType")
+            vegNameLU = vegRow.get("VegName")
+
+            # Define Fields for Vector Analysis from the Temporal Dataframe (should only be two record 1-Historic,
+            # 2-Future
+            # Get First row from temporal dataframe, will be the Historic fields
+            seriesHist = temporalDF.iloc[0]
+            timePeriodHist = seriesHist.get("TemporalFields")
+            aetFieldsHist = seriesHist.get("AETFields")
+            deficitFieldsHist = seriesHist.get("DeficitFields")
+
+            # Get Second row from temporal dataframe, will be the Ensemble Fields
+            seriesFut_Ens = temporalDF.iloc[1]
+            timePeriodFut_Ens = seriesFut_Ens.get("TemporalFields")
+            aetFieldsFut_Ens = seriesFut_Ens.get("AETFields")
+            deficitFieldsFut_Ens = seriesFut_Ens.get("DeficitFields")
+
+            # Get Third row from temporal dataframe, will be the Warm Wet Fields
+            seriesFut_WW = temporalDF.iloc[2]
+            timePeriodFut_WW = seriesFut_WW.get("TemporalFields")
+            aetFieldsFut_WW = seriesFut_WW.get("AETFields")
+            deficitFieldsFut_WW = seriesFut_WW.get("DeficitFields")
+
+            # Get Fourth row from temporal dataframe, will be the Hot Dry Fields
+            seriesFut_HD = temporalDF.iloc[3]
+            timePeriodFut_HD = seriesFut_HD.get("TemporalFields")
+            aetFieldsFut_HD = seriesFut_HD.get("AETFields")
+            deficitFieldsFut_HD = seriesFut_HD.get("DeficitFields")
+
+            # Subset to only the vegetation of Interest
+            noZeroVegTypeDF = noZeroDF[noZeroDF['VegType'] == vegTypeLU]
+
+            # Subset to all other than 'PCM' records
+            notPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] != 'PCM']
+
+            # Subset only PCM records
+            onlyPCMDF = noZeroVegTypeDF[noZeroVegTypeDF['Source'] == 'PCM']
+
+            ###########################
+            # Start Constructing Figure
+            ###########################
+
+            # Define the scatter Plot Size
+            fig, axs = plt.subplots(1, 1, figsize=(int(figSize[0]), int(figSize[1])))
+
+            #####
+            # Figure 1 - Upper Left - Ensemble
+            ######
+            # Create the scatter plot with the GBIF (high number of points)
+            sns.scatterplot(data=notPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Taxon',
+                            style='Taxon', palette='coolwarm')
+
+            # Overlay the PCM Plots
+            # Define the Style Mappings for the PCM Overlay
+            size_mapping = {'PCM': 50}
+            color_mapping = {'PCM': '#000000'}
+
+            # Create the scatter plot PCM only plots
+            scatterPlot = sns.scatterplot(data=onlyPCMDF, x=deficitFieldsHist, y=aetFieldsHist, hue='Source', size='Source',
+                            sizes=size_mapping, palette=color_mapping)
+
+            # For Legend get the list of unique GBIF Taxon
+            new_labels = notPCMDF['Taxon'].unique().tolist()
+
+            # Add the PCM Plots label
+            new_labels.append('Plots')
+
+            ################
+            # Legend Section
+            ################
+            # Pass the new Labels/handles to the Legend
+            handles, labels = scatterPlot.get_legend_handles_labels()
+            #scatterPlot.legend(handles=handles, labels=new_labels)
+
+            # Existing legend handles and labels
+            handles, labels = scatterPlot.get_legend_handles_labels()
+
+            # Replace the PCM with the 'Monitoring Plots'
+            labels = ['Monitoring Plots' if label == 'PCM' else label for label in labels]
+
+            # Create custom line handles for vectors
+            ww_handle = mlines.Line2D([], [], color='#001c7f', lw=1.5, label='Warm Wet Change', linestyle='-',
+                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#001c7f')
+            hd_handle = mlines.Line2D([], [], color='#e24a33', lw=1.5, label='Hot Dry Change', linestyle='-',
+                                      marker=r'$\rightarrow$', markersize=8, markerfacecolor='#e24a33')
+
+            # Add to handles
+            handles.append(ww_handle)
+            handles.append(hd_handle)
+            labels.append('Warm Wet Change')
+            labels.append('Hot Dry Change')
+
+            # Re-draw the legend
+            scatterPlot.legend(handles=handles, labels=labels, loc='best', fontsize='small')
+
+            # Draw vectors GBIF Hot Dry first will have great length easier to see then Warm Wet
+            for i in range(len(onlyPCMDF)):
+                # Ensemble
+                axs.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_HD].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]],
+                    color='#e24a33',
+                    lw=1.0
+                )
+
+                # Add arrow
+                axs.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut_HD].values[i], onlyPCMDF[aetFieldsFut_HD].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#e24a33', lw=1.0)
+                )
+
+            # Draw vectors GBIF Warm Wet
+            for i in range(len(onlyPCMDF)):
+                # Ensemble
+                axs.plot(
+                    [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
+                    [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
+                    color='#001c7f',
+                    lw=1.0
+                )
+
+                # Add arrow
+                axs.annotate(
+                    '',
+                    xy=(onlyPCMDF[deficitFieldsFut_WW].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
+                    xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                    arrowprops=dict(arrowstyle="->", color='#001c7f', lw=1.0)
+                )
+
+            # Add 1:1 dashed line
+            # Get max value in not PCMDF Dataframe, should get the highest value in the graph in nearly all cases
+            columns_to_include = [deficitFieldsHist, aetFieldsHist, deficitFieldsFut_Ens, aetFieldsFut_Ens]
+            max_val = notPCMDF[columns_to_include].max().max()
+            axs.plot([max_val, 0], [0, max_val], linestyle='--', color='black')
+
+            # Set common axis labels all plots, lower left will be overwritten during map creation.
+            for ax in np.atleast_1d(axs).flat:
+                ax.set(xlabel='Avg. Total Annual Deficit (mm)', ylabel='Avg. Total Annual AET (mm)')
+
+                # Draw vectors GBIF Warm Wet
+                for i in range(len(onlyPCMDF)):
+                    # Ensemble
+                    axs.plot(
+                        [onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[deficitFieldsFut_WW].values[i]],
+                        [onlyPCMDF[aetFieldsHist].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]],
+                        color='#001c7f',
+                        lw=1.0
+                    )
+
+                    # Add arrow
+                    axs.annotate(
+                        '',
+                        xy=(onlyPCMDF[deficitFieldsFut_WW].values[i], onlyPCMDF[aetFieldsFut_WW].values[i]),
+                        xytext=(onlyPCMDF[deficitFieldsHist].values[i], onlyPCMDF[aetFieldsHist].values[i]),
+                        arrowprops=dict(arrowstyle="->", color='#001c7f', lw=1.0)
+                    )
+
+            #########################
+            # Attributes Whole Figure
+            #########################
+
+            # Add Overall Figure Title
+            titleLU = f'{vegNameLU} change from {timePeriodHist} to 2040-2069'
+            fig.suptitle(titleLU, fontsize=16, y=0.93)
+
+            # Name for output graph
+            outPDF = f'{vegNameLU}_PCMVector_{timePeriodHist}_2040_2069_WWHD.pdf'
+
+            # OutFolder
+            outFolder = 'VectorPCM_GBIFHistoric_wTaxon_EnsWWHDOne'
+
+            # Full Path
+            outPath = f'{outDir}\\{outFolder}\\{outPDF}'
+
+            # Delete File IF Exists
+            if os.path.exists(outPath):
+                os.remove(outPath)
+            # Make points file if needed
+            if os.path.exists(f'{outDir}\\{outFolder}'):
+                pass
+                pass
+            else:
+                os.makedirs(f'{outDir}\\{outFolder}')
+
+            # Export Plot
+            plt.savefig(outPath, format='pdf')
+
+            # Close Plot
+            plt.close()
+
+            messageTime = timeFun()
+            scriptMsg = f'Successfully created Vector graph - {vegTypeLU} for vectorPCMPointsGBIFTaxonWWHDOne - see - {outPath} - {messageTime}'
+            print(scriptMsg)
+
+            logFile = open(logFileName, "a")
+            logFile.write(scriptMsg + "\n")
+            logFile.close()
+
+        return 'success function'
+
+    except:
+        print(f'Failed - vectorPCMPointsGBIFHistwTaxon')
+        exit()
+
+
 
 
 def timeFun():
